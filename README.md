@@ -1,20 +1,7 @@
-# Nest.js template
-Template này được sử dụng cho video fullstack Next.js/Nest.js của tác giả Hỏi Dân IT (Eric)
-
 ### Môi trường chạy dự án: Node.js v20.11.1
 
 ## Về tác giả
-Mọi thông tin về Tác giả Hỏi Dân IT, các bạn có thể tìm kiếm tại đây:
-
-Website chính thức: https://hoidanit.vn/
-
-Youtube “Hỏi Dân IT” : https://www.youtube.com/@hoidanit
-
-Tiktok “Hỏi Dân IT” :  https://www.tiktok.com/@hoidanit
-
-Fanpage “Hỏi Dân IT” : https://www.facebook.com/askITwithERIC/
-
-Udemy Hỏi Dân IT: https://www.udemy.com/user/eric-7039/
+- Nguyen Quoc Khanh (A45081 - TLU)
 
 ===
 
