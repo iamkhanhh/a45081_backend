@@ -1,10 +1,9 @@
 {
-  "name": "02-nest-rn",
+  "name": "a45081-backend",
   "version": "0.0.1",
   "description": "",
   "author": {
-    "url": "https://hoidanit.vn",
-    "name": "Hỏi Dân IT"
+    "name": "Nguyen Quoc Khanh"
   },
   "private": true,
   "license": "UNLICENSED",
