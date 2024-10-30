@@ -3,7 +3,7 @@ import { IsMongoId, IsNotEmpty, IsOptional } from "class-validator";
 export class UpdateUserDto {
   @IsMongoId()
   @IsNotEmpty()
-  _id: string;
+  id: number;
 
   @IsOptional()
   name: string;

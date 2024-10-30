@@ -8,5 +8,11 @@ export class CreateAuthDto {
   password: string
 
   @IsOptional()
-  name: string
+  first_name: string
+
+  @IsOptional()
+  last_name: string
+
+  @IsOptional()
+  phone_number: string
 }

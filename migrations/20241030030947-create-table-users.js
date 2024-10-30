@@ -57,7 +57,7 @@ exports.up = function(db, callback) {
 			type: 'string'
 		},
     codeExpired: {
-			type: 'date'
+			type: 'timestamp'
 		},
 		createdAt: {
 			type: 'timestamp',
