@@ -15,12 +15,12 @@ export class Workspaces {
   number: number;
 
   @Column()
-  pipeline: string;
+  pipeline: number;
 
   @Column({ type: 'text'})
   dashboard: string;
 
-  @Column()
+  @Column({default: 0})
   is_deleted: number;
 
   @CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP(6)" })

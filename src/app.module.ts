@@ -11,12 +11,16 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handleba
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Analysis, GeneClinicalSynopsis, PatientInformation, Pipelines, Samples, Uploads, Users, Workspaces } from './entities';
 import { AuthGuard } from './auth/passport/auth.guard';
+import { PipelinesModule } from './modules/pipelines/pipelines.module';
+import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 
 @Module({
   imports: [
     UsersModule,
     ConfigModule.forRoot({ isGlobal: true }),
     AuthModule,
+    PipelinesModule,
+    WorkspacesModule,
     MailerModule.forRootAsync({
       useFactory: () => ({
         transport: {

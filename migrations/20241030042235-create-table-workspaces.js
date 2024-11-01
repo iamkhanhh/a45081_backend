@@ -15,7 +15,7 @@ exports.setup = function(options, seedLink) {
 };
 
 exports.up = function(db, callback) {
-	db.createTable('workspace', {
+	db.createTable('workspaces', {
 		id: {
 			type: 'int',
 			primaryKey: true,
@@ -39,7 +39,7 @@ exports.up = function(db, callback) {
 			type: 'int'
 		},
 		pipeline: {
-			type: 'string'
+			type: 'int'
 		},
     dashboard: {
 			type: 'text'
@@ -59,7 +59,7 @@ exports.up = function(db, callback) {
 };
 
 exports.down = function(db, callback) {
-	db.dropTable('workspace', callback);
+	db.dropTable('workspaces', callback);
 };
 
 exports._meta = {
