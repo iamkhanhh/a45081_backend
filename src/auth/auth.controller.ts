@@ -1,8 +1,9 @@
-import { Controller, Post, UseGuards, Request, Get, Body, Param } from '@nestjs/common';
+import { Controller, Post, UseGuards, Request, Get, Body, Param, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './passport/local-auth.guard';
 import { Public } from '@/decorators';
 import { CreateAuthDto } from './dto/create-auth.dto';
+import { Response } from 'express';
 
 
 @Controller('auth')
@@ -14,10 +15,20 @@ export class AuthController {
   @Public()
   @Post('login')
   @UseGuards(LocalAuthGuard)
-  signIn(
+  async signIn(
+    @Res({passthrough: true}) res: Response,
     @Request() req
   ) {
-    return this.authService.login(req.user);
+    const {access_token} = await this.authService.login(req.user);
+    res.cookie('access_token', access_token, {
+      maxAge: 365 * 24 * 60 * 60 * 100,
+      sameSite: 'strict',
+      httpOnly: true,
+    }); 
+    return {
+      status: "success",
+      message: "Logged in successfully !",
+    }
   }
 
   @Public()
@@ -35,8 +46,30 @@ export class AuthController {
     return this.authService.activateAccount(activateDto, Number(id));
   }
 
+  @Public()
+  @Post('forgot-password')
+  forgotPassword(
+    @Request() req,
+    @Body() forgotPasswordDto: any
+  ) {
+    return this.authService.forgotPassword(forgotPasswordDto.email);
+  }
+
   @Get('me')
   getProfile(@Request() req) {
-    return req.user;
+    return {
+      status: 'success',
+      data: req.user
+    };
+  }
+
+  @Post('logout')
+  logout(@Res() res) {
+		res.clearCookie('access_token', {
+      maxAge: 365 * 24 * 60 * 60 * 100,
+      sameSite: 'strict',
+      httpOnly: true,
+    });
+		return res.json({status: 'success', message: 'Logged out successfully!'});
   }
 }

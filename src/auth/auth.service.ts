@@ -14,9 +14,9 @@ export class AuthService {
   ) {}
 
   async login(user: any) {
-    const payload = { email: user.email, sub: user._id };
+    const payload = { email: user.email, sub: user.id };
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token: await this.jwtService.sign(payload),
     };
   }
 
@@ -50,5 +50,9 @@ export class AuthService {
 
   async activateAccount(activateDto: any, id: number) {
     return await this.usersService.activateAccount(activateDto.code, id);
+  }
+
+  async forgotPassword(email: string) {
+    return await this.usersService.forgotPassword(email);
   }
 }

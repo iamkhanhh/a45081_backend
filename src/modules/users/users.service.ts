@@ -90,13 +90,12 @@ export class UsersService {
   async register(createAuthDto: CreateAuthDto) {
     const {email, password, first_name, last_name, phone_number} = createAuthDto;
 
-    const hashPassword = await hashPasswordHelper(password);
-
     const isEmailExist = await this.isEMailExist(email);
     if (isEmailExist) {
       throw new BadRequestException(`${email} has been existed! Please use another email!`)
     }
 
+    const hashPassword = await hashPasswordHelper(password);
     const codeId = uuidv4();
     const newUser = new Users();
     newUser.email = email;
@@ -122,7 +121,11 @@ export class UsersService {
     })
 
     return {
-      id: savedUser.id
+      status: 'success',
+      message: 'Created an account successfully!',
+      data: {
+        id: savedUser.id
+      }
     };
   }
 
@@ -145,6 +148,38 @@ export class UsersService {
       }
     } else {
       throw new BadRequestException('Code active has been expired! Please get another code!') 
+    }
+  }
+
+  async forgotPassword(email: string) {
+    const isEmailExist = await this.isEMailExist(email);
+    if (!isEmailExist) {
+      throw new BadRequestException(`${email} has not been existed! Please use another email!`)
+    }
+
+    const user = await this.usersRepository.findOne({where: {email}});
+    if (!user) {
+      throw new BadRequestException('This account is not exist!') 
+    }
+
+    const codeId = uuidv4();
+    const hashPassword = await hashPasswordHelper(codeId);
+    await this.usersRepository.update({id: user.id}, {password: hashPassword});
+
+    this.mailerService
+    .sendMail({
+      to: user.email,
+      subject: 'Temp password',
+      template: "forgot-password",
+      context: {
+        name: user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.email,
+        tempPassword: codeId
+      }
+    })
+
+    return {
+      status: 'success',
+      message: 'Your temp password will be send to your email!'
     }
   }
 }
