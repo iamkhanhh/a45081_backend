@@ -13,6 +13,10 @@ import { Analysis, GeneClinicalSynopsis, PatientInformation, Pipelines, Samples,
 import { AuthGuard } from './auth/passport/auth.guard';
 import { PipelinesModule } from './modules/pipelines/pipelines.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
+import { AnalysisModule } from './modules/analysis/analysis.module';
+import { PatientInformationModule } from './modules/patient-information/patient-information.module';
+import { SamplesModule } from './modules/samples/samples.module';
+import { UploadsModule } from './modules/uploads/uploads.module';
 
 @Module({
   imports: [
@@ -21,6 +25,10 @@ import { WorkspacesModule } from './modules/workspaces/workspaces.module';
     AuthModule,
     PipelinesModule,
     WorkspacesModule,
+    AnalysisModule,
+    PatientInformationModule,
+    SamplesModule,
+    UploadsModule,
     MailerModule.forRootAsync({
       useFactory: () => ({
         transport: {

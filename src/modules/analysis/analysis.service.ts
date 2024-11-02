@@ -1,9 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { CreateAnalysisDto } from './dto/create-analysis.dto';
 import { UpdateAnalysisDto } from './dto/update-analysis.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Analysis } from '@/entities';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class AnalysisService {
+
+  constructor(
+    @InjectRepository(Analysis) private analysisRepository: Repository<Analysis>
+  ) {}
+
   create(createAnalysisDto: CreateAnalysisDto) {
     return 'This action adds a new analysis';
   }

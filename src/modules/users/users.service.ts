@@ -72,6 +72,10 @@ export class UsersService {
     return `This action returns a #${id} user`;
   }
 
+  async getUserById(id : number) {
+    return await this.usersRepository.findOne({where: { id }});
+  }
+
   async findByEmail(email: string) {
     return await this.usersRepository.findOne({where: { email }});
   }
