@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Request, Query } from '@nestjs/common';
 import { WorkspacesService } from './workspaces.service';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
@@ -17,9 +17,11 @@ export class WorkspacesController {
 
   @Get()
   async findAll(
-    @Request() req
+    @Request() req,
+    @Query('page') page: number,
+    @Query('pageSize') pageSize: number
   ) {
-    return await this.workspacesService.findAll(req.user.id);
+    return await this.workspacesService.findAll(req.user.id, page, pageSize);
   }
 
   @Get(':id')
