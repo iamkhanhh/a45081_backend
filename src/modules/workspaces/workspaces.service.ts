@@ -6,7 +6,6 @@ import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PipelinesService } from '../pipelines/pipelines.service';
 import * as dayjs from 'dayjs'
-import { off } from 'process';
 
 @Injectable()
 export class WorkspacesService {
@@ -56,7 +55,7 @@ export class WorkspacesService {
       where: { user_created_id: id, is_deleted: 0 },
       skip: offset,
       take: pageSize,
-  });
+    });
 
     const data = await Promise.all(workspaces.map(async (workspace) => {
       const pipeline_name = await this.pipelinesService.getPipelineNameFromId(workspace.pipeline);
@@ -84,6 +83,18 @@ export class WorkspacesService {
   index(id: number) {
 
     return `This action returns a #${id} workspace`;
+  }
+
+  async getWorkspaceName(id: number) {
+    const workspace = await this.workspacesRepository.findOne({where: {id}});
+    if (!workspace) {
+      throw new BadRequestException('That workspace could not be found')
+    }
+    return {
+      status: 'success',
+      message: 'getWorkspaceName successfully!',
+      data: workspace.name
+    };
   }
 
   update(id: number, updateWorkspaceDto: UpdateWorkspaceDto) {

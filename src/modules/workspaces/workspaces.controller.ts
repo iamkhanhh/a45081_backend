@@ -29,6 +29,11 @@ export class WorkspacesController {
     return this.workspacesService.index(+id);
   }
 
+  @Get('getWorkspaceName/:id')
+  async getWorkspaceName(@Param('id') id: string) {
+    return await this.workspacesService.getWorkspaceName(+id);
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateWorkspaceDto: UpdateWorkspaceDto) {
     return this.workspacesService.update(+id, updateWorkspaceDto);

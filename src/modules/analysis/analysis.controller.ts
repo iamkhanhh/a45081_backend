@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Request, Query } from '@nestjs/common';
 import { AnalysisService } from './analysis.service';
 import { CreateAnalysisDto } from './dto/create-analysis.dto';
 import { UpdateAnalysisDto } from './dto/update-analysis.dto';
@@ -20,6 +20,16 @@ export class AnalysisController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.analysisService.findOne(+id);
+  }
+
+  @Get('getAnalysesByWorkspaceId/:id')
+  async getAnalysesByWorkspaceId(
+    @Request() req,
+    @Query('page') page: number,
+    @Query('pageSize') pageSize: number,
+    @Param('id') id: string
+  ) {
+    return await this.analysisService.getAnalysesByWorkspaceId(+id, req.user.id, page, pageSize);
   }
 
   @Patch(':id')

@@ -85,4 +85,24 @@ export class Analysis {
   // static getMongoCollectionName(analysisId: number): {
 	// 	return process.env.MONGO_ANALYSIS_PREFIX + analysisId
 	// }
+
+  static getAnalysisStatus(status): string {
+		switch(status) {
+			case AnalysisStatus.QUEUING: 
+			case AnalysisStatus.FASTQ_QUEUING: 
+				return 'Queuing'
+			case AnalysisStatus.ANALYZING:
+			case AnalysisStatus.FASTQ_ANALYZING:
+			case AnalysisStatus.VEP_ANALYZED:
+			case AnalysisStatus.IMPORTING:
+				return 'Analyzing'
+			case AnalysisStatus.ANALYZED:
+				return 'Analyzed'
+			case AnalysisStatus.ERROR:
+			case AnalysisStatus.FASTQ_ERROR:
+				return 'Error';
+			default:
+				return 'Queuing'
+		}
+	}
 }
