@@ -18,7 +18,11 @@ export class PipelinesService {
 
   async findAll() {
     const pipelines = await this.pipelinesRepository.find({});
-    return pipelines;
+    return {
+      status: 'success',
+      message: 'load all pipelines successfully!',
+      data: pipelines
+    };
   }
 
   findOne(id: number) {

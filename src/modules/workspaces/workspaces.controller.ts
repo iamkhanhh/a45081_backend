@@ -25,8 +25,8 @@ export class WorkspacesController {
   }
 
   @Get(':id')
-  index(@Param('id') id: string) {
-    return this.workspacesService.index(+id);
+  async index(@Param('id') id: string) {
+    return await this.workspacesService.index(+id);
   }
 
   @Get('getWorkspaceName/:id')

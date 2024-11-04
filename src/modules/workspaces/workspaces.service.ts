@@ -80,9 +80,16 @@ export class WorkspacesService {
     };
   }
 
-  index(id: number) {
-
-    return `This action returns a #${id} workspace`;
+  async index(id: number) {
+    const workspace = await this.workspacesRepository.findOne({where: {id}});
+    if (!workspace) {
+      throw new BadRequestException('That workspace could not be found')
+    }
+    return {
+      status: 'success',
+      message: 'got workspace successfully!',
+      data: workspace
+    };
   }
 
   async getWorkspaceName(id: number) {

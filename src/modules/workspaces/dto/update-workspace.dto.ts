@@ -1,4 +1,12 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateWorkspaceDto } from './create-workspace.dto';
+import { IsNotEmpty, IsOptional } from "class-validator";
 
-export class UpdateWorkspaceDto extends PartialType(CreateWorkspaceDto) {}
+export class UpdateWorkspaceDto {
+  @IsNotEmpty()
+  name: string
+
+  @IsNotEmpty()
+  pipeline: number
+
+  @IsOptional()
+  dashboard: string
+}
