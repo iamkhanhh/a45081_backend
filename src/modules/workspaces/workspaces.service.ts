@@ -60,12 +60,14 @@ export class WorkspacesService {
     const data = await Promise.all(workspaces.map(async (workspace) => {
       const pipeline_name = await this.pipelinesService.getPipelineNameFromId(workspace.pipeline);
       const formatted_date = dayjs(workspace.createdAt).format('DD/MM/YYYY');
+      const updatedAt = dayjs(workspace.updatedAt).format('DD/MM/YYYY');
       return {
         id: workspace.id,
         name: workspace.name,
         number: workspace.number,
         createdAt: formatted_date,
-        pipeline_name: pipeline_name
+        pipeline_name: pipeline_name,
+        updatedAt
       }
     }));
 
@@ -104,8 +106,17 @@ export class WorkspacesService {
     };
   }
 
-  update(id: number, updateWorkspaceDto: UpdateWorkspaceDto) {
-    return `This action updates a #${id} workspace`;
+  async update(id: number, updateWorkspaceDto: UpdateWorkspaceDto) {
+    const workspace = await this.workspacesRepository.findOne({where: {id}});
+    if (!workspace) {
+      throw new BadRequestException('That workspace could not be found')
+    }
+    await this.workspacesRepository.update({id}, {...updateWorkspaceDto});
+
+    return {
+      status: 'success',
+      message: 'Updated successfully!'
+    }
   }
 
   async remove(id: number) {

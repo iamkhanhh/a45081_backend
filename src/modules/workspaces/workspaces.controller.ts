@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Request, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Request, Query, Put } from '@nestjs/common';
 import { WorkspacesService } from './workspaces.service';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
@@ -34,9 +34,9 @@ export class WorkspacesController {
     return await this.workspacesService.getWorkspaceName(+id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateWorkspaceDto: UpdateWorkspaceDto) {
-    return this.workspacesService.update(+id, updateWorkspaceDto);
+  @Put(':id')
+  async update(@Param('id') id: string, @Body() updateWorkspaceDto: UpdateWorkspaceDto) {
+    return await this.workspacesService.update(+id, updateWorkspaceDto);
   }
 
   @Delete(':id')
