@@ -38,7 +38,7 @@ export class AnalysisController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.analysisService.remove(+id);
+  async remove(@Param('id') id: string) {
+    return await this.analysisService.remove(+id);
   }
 }

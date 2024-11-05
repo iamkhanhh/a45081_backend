@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateAnalysisDto } from './dto/create-analysis.dto';
 import { UpdateAnalysisDto } from './dto/update-analysis.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -86,7 +86,15 @@ export class AnalysisService {
     return `This action updates a #${id} analysis`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} analysis`;
+  async remove(id: number) {
+    const analysis = await this.analysisRepository.findOne({where: {id}});
+    if (!analysis) {
+      throw new BadRequestException('That analysis could not be found')
+    }
+    await this.analysisRepository.update({id}, {is_deleted: 1});
+    return {
+      status: 'success',
+      message: 'Deleted successfully!'
+    };
   }
 }
