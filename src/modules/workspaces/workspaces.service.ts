@@ -55,6 +55,9 @@ export class WorkspacesService {
       where: { user_created_id: id, is_deleted: 0 },
       skip: offset,
       take: pageSize,
+      order: {
+        createdAt: 'desc'
+      }
     });
 
     const data = await Promise.all(workspaces.map(async (workspace) => {

@@ -22,6 +22,11 @@ export class SamplesController {
     return this.samplesService.findOne(+id);
   }
 
+  @Get('getSamplesByPipeLine/:id')
+  async getSamplesByPipeLine(@Param('id') id: string) {
+    return await this.samplesService.getSamplesByPipeLine(+id);
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateSampleDto: UpdateSampleDto) {
     return this.samplesService.update(+id, updateSampleDto);
