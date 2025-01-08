@@ -16,6 +16,7 @@ import { AnalysisModule } from './modules/analysis/analysis.module';
 import { PatientInformationModule } from './modules/patient-information/patient-information.module';
 import { SamplesModule } from './modules/samples/samples.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
+import { CommonModule } from './common/common.module';
 
 const ENV = process.env.NODE_ENV || 'development';
 
@@ -63,7 +64,7 @@ const ENV = process.env.NODE_ENV || 'development';
       useFactory: (configService: ConfigService) => ({
         type: 'mysql',
         host: configService.get('DB_HOST'),
-        port: +configService.get<number>('DB_PORT'),
+        port: configService.get<number>('DB_PORT'),
         username: configService.get('DB_USERNAME'),
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_DATABSE'),
@@ -71,7 +72,8 @@ const ENV = process.env.NODE_ENV || 'development';
         synchronize: false,
       }),
       inject: [ConfigService],
-    })
+    }),
+    CommonModule
   ],
   controllers: [AppController],
   providers: [
