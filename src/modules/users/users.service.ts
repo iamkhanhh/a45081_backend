@@ -7,9 +7,10 @@ import { CreateAuthDto } from '@/auth/dto/create-auth.dto';
 import { v4 as uuidv4 } from 'uuid';
 import * as dayjs from 'dayjs';
 import { MailerService } from '@nestjs-modules/mailer';
-import { UserRole, Users, UserStatus } from '@/entities';
+import { Users } from '@/entities';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
+import { UserRole, UserStatus } from '@/enums';
 
 @Injectable()
 export class UsersService {

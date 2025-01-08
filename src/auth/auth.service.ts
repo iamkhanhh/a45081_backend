@@ -4,7 +4,8 @@ import { UsersService } from '@/modules/users/users.service';
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { CreateAuthDto } from './dto/create-auth.dto';
-import { Users, UserStatus } from '@/entities';
+import { Users } from '@/entities';
+import { UserStatus } from '@/enums';
 
 @Injectable()
 export class AuthService {
