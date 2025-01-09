@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe } from '@nestjs/common';
 import { PipelinesService } from './pipelines.service';
 import { CreatePipelineDto } from './dto/create-pipeline.dto';
 import { UpdatePipelineDto } from './dto/update-pipeline.dto';
@@ -18,17 +18,17 @@ export class PipelinesController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.pipelinesService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.pipelinesService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePipelineDto: UpdatePipelineDto) {
-    return this.pipelinesService.update(+id, updatePipelineDto);
+  update(@Param('id', ParseIntPipe) id: number, @Body() updatePipelineDto: UpdatePipelineDto) {
+    return this.pipelinesService.update(id, updatePipelineDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.pipelinesService.remove(+id);
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.pipelinesService.remove(id);
   }
 }

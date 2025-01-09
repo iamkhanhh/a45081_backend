@@ -1,4 +1,4 @@
-import { Controller, Post, UseGuards, Request, Get, Body, Param, Res } from '@nestjs/common';
+import { Controller, Post, UseGuards, Request, Get, Body, Param, Res, ParseIntPipe } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './passport/local-auth.guard';
 import { Public } from '@/decorators';
@@ -41,9 +41,9 @@ export class AuthController {
   @Post('activate-account/:id')
   activateAccount(
     @Body() activateDto: any,
-    @Param('id') id: string
+    @Param('id', ParseIntPipe) id: number
   ) {
-    return this.authService.activateAccount(activateDto, Number(id));
+    return this.authService.activateAccount(activateDto, id);
   }
 
   @Public()

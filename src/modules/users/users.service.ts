@@ -85,7 +85,7 @@ export class UsersService {
     return await this.usersRepository.update({id: updateUserDto.id}, {...updateUserDto});
   }
 
-  async remove(id: string) {
+  async remove(id: number) {
     // if (mongoose.isValidObjectId(id)) {
     //   return await this.usersRepository.deleteOne({id});
     // }

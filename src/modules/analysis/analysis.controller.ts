@@ -18,8 +18,8 @@ export class AnalysisController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.analysisService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.analysisService.findOne(id);
   }
 
   @Get('getAnalysesByWorkspaceId/:id')

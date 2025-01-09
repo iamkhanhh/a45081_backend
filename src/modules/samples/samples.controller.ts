@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe } from '@nestjs/common';
 import { SamplesService } from './samples.service';
 import { CreateSampleDto } from './dto/create-sample.dto';
 import { UpdateSampleDto } from './dto/update-sample.dto';
@@ -18,22 +18,22 @@ export class SamplesController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.samplesService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.samplesService.findOne(id);
   }
 
   @Get('getSamplesByPipeLine/:id')
-  async getSamplesByPipeLine(@Param('id') id: string) {
-    return await this.samplesService.getSamplesByPipeLine(+id);
+  async getSamplesByPipeLine(@Param('id', ParseIntPipe) id: number) {
+    return await this.samplesService.getSamplesByPipeLine(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateSampleDto: UpdateSampleDto) {
-    return this.samplesService.update(+id, updateSampleDto);
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateSampleDto: UpdateSampleDto) {
+    return this.samplesService.update(id, updateSampleDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.samplesService.remove(+id);
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.samplesService.remove(id);
   }
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe } from '@nestjs/common';
 import { UploadsService } from './uploads.service';
 import { CreateUploadDto } from './dto/create-upload.dto';
 import { UpdateUploadDto } from './dto/update-upload.dto';
@@ -18,17 +18,17 @@ export class UploadsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.uploadsService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.uploadsService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUploadDto: UpdateUploadDto) {
-    return this.uploadsService.update(+id, updateUploadDto);
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateUploadDto: UpdateUploadDto) {
+    return this.uploadsService.update(id, updateUploadDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.uploadsService.remove(+id);
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.uploadsService.remove(id);
   }
 }
