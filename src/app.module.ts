@@ -17,6 +17,7 @@ import { PatientInformationModule } from './modules/patient-information/patient-
 import { SamplesModule } from './modules/samples/samples.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { CommonModule } from './common/common.module';
+import environmentValidation from './config/environment.validation';
 
 const ENV = process.env.NODE_ENV || 'development';
 
@@ -26,6 +27,7 @@ const ENV = process.env.NODE_ENV || 'development';
     ConfigModule.forRoot({ 
       isGlobal: true,
       envFilePath: '.env.' + ENV,
+      validationSchema: environmentValidation
     }),
     AuthModule,
     PipelinesModule,
@@ -35,15 +37,14 @@ const ENV = process.env.NODE_ENV || 'development';
     SamplesModule,
     UploadsModule,
     MailerModule.forRootAsync({
-      useFactory: () => ({
+      useFactory: async (config: ConfigService) => ({
         transport: {
-          host: 'smtp.gmail.com',
-          port: 465,
+          host: config.get<string>('MAIL_HOST'),
           secure: true,
-          // ignoreTLS: true,
+          port: 465,
           auth: {
-            user: process.env.MAIL_USER,
-            pass: process.env.MAIL_PASSWORD,
+            user: config.get('MAIL_USER'),
+            pass: config.get('MAIL_PASSWORD'),
           },
         },
         defaults: {
@@ -58,6 +59,7 @@ const ENV = process.env.NODE_ENV || 'development';
           },
         }
       }),
+      inject: [ConfigService],
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
