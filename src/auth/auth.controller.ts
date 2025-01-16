@@ -38,6 +38,13 @@ export class AuthController {
   }
 
   @Public()
+  @Post('google-authentication')
+  googleAuthentication(@Body() body: any) {
+    console.log(body);
+    return true
+  }
+
+  @Public()
   @Post('activate-account/:id')
   activateAccount(
     @Body() activateDto: any,
