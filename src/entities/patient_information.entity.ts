@@ -1,10 +1,8 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { AbstractEntity } from './abstract.entity';
 
 @Entity()
-export class PatientInformation {
-  @PrimaryGeneratedColumn()
-  id: number;
-
+export class PatientInformation extends AbstractEntity{
   @Column()
   first_name: string;
 
@@ -19,10 +17,4 @@ export class PatientInformation {
 
   @Column()
   sample_id: number;
-
-  @CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP(6)" })
-  createdAt: Date;
-
-  @UpdateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP(6)", onUpdate: "CURRENT_TIMESTAMP(6)" })
-  updatedAt: Date;
 }

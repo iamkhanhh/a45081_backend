@@ -1,11 +1,9 @@
 import { UserRole, UserStatus } from '@/enums';
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { AbstractEntity } from './abstract.entity';
 
 @Entity()
-export class Users {
-  @PrimaryGeneratedColumn()
-  id: number;
-
+export class Users extends AbstractEntity{
   @Column()
   first_name: string;
 
@@ -35,12 +33,6 @@ export class Users {
 
   @Column({ type: 'timestamp', nullable: true })
   codeExpired: Date;
-
-  @CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP(6)" })
-  createdAt: Date;
-
-  @UpdateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP(6)", onUpdate: "CURRENT_TIMESTAMP(6)" })
-  updatedAt: Date;
 
   static getUserStatus(status: UserStatus): string {
     switch (status) {

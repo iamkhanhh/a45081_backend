@@ -45,7 +45,7 @@ export class WorkspacesService {
       is_deleted: 0
     }
 
-    const results = await this.paginationProvider.paginate(page, pageSize, this.workspacesRepository, filters);
+    const results = await this.paginationProvider.paginate<Workspaces>(page, pageSize, this.workspacesRepository, filters);
 
     const data = await Promise.all(results.data.map(async (workspace) => {
       const pipeline_name = await this.pipelinesService.getPipelineNameFromId(workspace.pipeline);

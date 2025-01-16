@@ -1,11 +1,9 @@
 import { AnalysisStatus } from '@/enums';
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { AbstractEntity } from './abstract.entity';
 
 @Entity()
-export class Analysis {
-  @PrimaryGeneratedColumn()
-  id: number;
-
+export class Analysis extends AbstractEntity{
   @Column()
   name: string;
 
@@ -65,12 +63,6 @@ export class Analysis {
 
   @Column()
   assembly: string;
-
-  @CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP(6)" })
-  createdAt: Date;
-
-  @UpdateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP(6)", onUpdate: "CURRENT_TIMESTAMP(6)" })
-  updatedAt: Date;
 
   // static getMongoCollectionName(analysisId: number): {
 	// 	return process.env.MONGO_ANALYSIS_PREFIX + analysisId

@@ -1,10 +1,8 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { AbstractEntity } from './abstract.entity';
 
 @Entity()
-export class Samples {
-  @PrimaryGeneratedColumn()
-  id: number;
-
+export class Samples extends AbstractEntity{
   @Column()
   name: string;
 
@@ -31,12 +29,6 @@ export class Samples {
 
   @Column()
   assembly: string;
-
-  @CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP(6)" })
-  createdAt: Date;
-
-  @UpdateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP(6)", onUpdate: "CURRENT_TIMESTAMP(6)" })
-  updatedAt: Date;
 
   static getSampleStatus(status: number): string {
 		switch (status) {

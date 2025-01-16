@@ -1,16 +1,17 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { ObjectLiteral } from 'typeorm';
+import { FindOptionsOrder, FindOptionsWhere, ObjectLiteral } from 'typeorm';
 import { Repository } from 'typeorm';
 import { Pagination } from '../interfaces/pagination.interface';
+import { AbstractEntity } from '@/entities/abstract.entity';
 
 @Injectable()
 export class PaginationProvider {
 
-  public async paginate<T extends ObjectLiteral>(
+  public async paginate<T extends AbstractEntity>(
     page: number,
     pageSize: number,
     repository: Repository<T>,
-    filters: Partial<T> = {}
+    filters: FindOptionsWhere<T> = {}
   ): Promise<Pagination<T>> {
     page = Math.max(1, page);
     pageSize = Math.max(1, pageSize);
@@ -25,9 +26,9 @@ export class PaginationProvider {
             where,
             skip: offset,
             take: pageSize,
-            // order: {
-            //     createdAt: 'desc'
-            // }
+            order: {
+              createdAt: "DESC"
+          } as FindOptionsOrder<T>
         });
         totalItems = await repository.count({
             where

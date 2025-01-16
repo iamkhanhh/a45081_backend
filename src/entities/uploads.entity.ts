@@ -1,10 +1,8 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { AbstractEntity } from './abstract.entity';
 
 @Entity()
-export class Uploads {
-  @PrimaryGeneratedColumn()
-  id: number;
-
+export class Uploads extends AbstractEntity{
   @Column()
   original_name: string;
 
@@ -34,12 +32,6 @@ export class Uploads {
 
   @Column()
   upload_status: number;
-
-  @CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP(6)" })
-  createdAt: Date;
-
-  @UpdateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP(6)", onUpdate: "CURRENT_TIMESTAMP(6)" })
-  updatedAt: Date;
 
   static getUploadStatus(status: number): string {
 		switch (status) {

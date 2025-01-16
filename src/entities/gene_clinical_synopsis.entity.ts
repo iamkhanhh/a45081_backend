@@ -1,10 +1,8 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { AbstractEntity } from './abstract.entity';
 
 @Entity()
-export class GeneClinicalSynopsis {
-  @PrimaryGeneratedColumn()
-  id: number;
-
+export class GeneClinicalSynopsis extends AbstractEntity{
   @Column()
   gene_omim: string;
 
@@ -19,10 +17,4 @@ export class GeneClinicalSynopsis {
 
   @Column()
   location: string;
-
-  @CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP(6)" })
-  createdAt: Date;
-
-  @UpdateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP(6)", onUpdate: "CURRENT_TIMESTAMP(6)" })
-  updatedAt: Date;
 }
