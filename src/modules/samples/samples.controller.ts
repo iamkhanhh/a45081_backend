@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, DefaultValuePipe, Query, Request } from '@nestjs/common';
 import { SamplesService } from './samples.service';
 import { CreateSampleDto } from './dto/create-sample.dto';
 import { UpdateSampleDto } from './dto/update-sample.dto';
@@ -13,8 +13,12 @@ export class SamplesController {
   }
 
   @Get()
-  findAll() {
-    return this.samplesService.findAll();
+  findAll(
+    @Request() req,
+    @Query('page', ParseIntPipe, new DefaultValuePipe(1)) page: number,
+    @Query('pageSize', ParseIntPipe, new DefaultValuePipe(10)) pageSize: number,
+  ) {
+    return this.samplesService.findAll(req.user.id, page, pageSize);
   }
 
   @Get(':id')

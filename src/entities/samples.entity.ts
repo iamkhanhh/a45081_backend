@@ -9,13 +9,19 @@ export class Samples extends AbstractEntity{
   @Column()
   user_id: number;
 
-  @Column()
+  @Column({
+    nullable: true
+  })
   data_type: number;
 
-  @Column()
+  @Column({
+    nullable: true
+  })
   control: string;
 
-  @Column()
+  @Column({
+    nullable: true
+  })
   genotype: string;
 
   @Column()

@@ -4,20 +4,47 @@ import { UpdateSampleDto } from './dto/update-sample.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Samples } from '@/entities';
 import { Repository } from 'typeorm';
+import { PaginationProvider } from '@/common/providers/pagination.provider';
+import * as dayjs from 'dayjs'
 
 @Injectable()
 export class SamplesService {
 
   constructor(
     @InjectRepository(Samples) private samplesRepository: Repository<Samples>,
-  ) {}
+    private readonly paginationProvider: PaginationProvider
+  ) { }
 
   create(createSampleDto: CreateSampleDto) {
     return 'This action adds a new sample';
   }
 
-  findAll() {
-    return `This action returns all samples`;
+  async findAll(id: number, page: number, pageSize: number) {
+    const filters = {
+      user_id: id
+    }
+
+    const results = await this.paginationProvider.paginate<Samples>(page, pageSize, this.samplesRepository, filters);
+
+    const data = await Promise.all(results.data.map(async (sample) => {
+      const formatted_date = dayjs(sample.createdAt).format('DD/MM/YYYY');
+      const sample_status = Samples.getSampleStatus(sample.complete_status);
+      return {
+        id: sample.id,
+        name: sample.name,
+        createdAt: formatted_date,
+        type: sample.file_type,
+        status: sample_status,
+        size: sample.file_size,
+        assembly: sample.assembly
+      }
+    }));
+
+    return {
+      ...results,
+      data,
+      message: 'List all workspaces successfully!'
+    };
   }
 
   findOne(id: number) {
@@ -34,9 +61,11 @@ export class SamplesService {
       throw new BadRequestException('There is not a pipeline has that id!')
     }
 
-    const samples = await this.samplesRepository.find({where: {
-      file_type
-    }})
+    const samples = await this.samplesRepository.find({
+      where: {
+        file_type
+      }
+    })
 
     return {
       status: 'success',
