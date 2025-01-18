@@ -1,7 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { hashPasswordHelper } from '@/helpers';
 import aqp from 'api-query-params';
 import { CreateAuthDto } from '@/auth/dto/create-auth.dto';
 import { v4 as uuidv4 } from 'uuid';
@@ -11,19 +10,21 @@ import { Users } from '@/entities';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserRole, UserStatus } from '@/enums';
+import { HashingPasswordProvider } from '@/common/providers/hashing-password.provider';
 
 @Injectable()
 export class UsersService {
 
   constructor(
     @InjectRepository(Users) private usersRepository: Repository<Users>,
-    private readonly mailerService: MailerService
+    private readonly mailerService: MailerService,
+    private readonly hashingPasswordProvider: HashingPasswordProvider
   ) {}
 
   async create(createUserDto: CreateUserDto) {
     const {name, email, password, phone, address, image} = createUserDto;
 
-    const hashPassword = await hashPasswordHelper(password);
+    const hashPassword = await this.hashingPasswordProvider.hashPasswordHelper(password);
 
     const isEmailExist = await this.isEMailExist(email);
     if (isEmailExist) {
@@ -100,7 +101,7 @@ export class UsersService {
       throw new BadRequestException(`${email} has been existed! Please use another email!`)
     }
 
-    const hashPassword = await hashPasswordHelper(password);
+    const hashPassword = await this.hashingPasswordProvider.hashPasswordHelper(password);
     const codeId = uuidv4();
     const newUser = new Users();
     newUser.email = email;
@@ -168,7 +169,7 @@ export class UsersService {
     }
 
     const codeId = uuidv4();
-    const hashPassword = await hashPasswordHelper(codeId);
+    const hashPassword = await this.hashingPasswordProvider.hashPasswordHelper(codeId);
     await this.usersRepository.update({id: user.id}, {password: hashPassword});
 
     this.mailerService

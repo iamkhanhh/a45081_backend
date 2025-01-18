@@ -1,17 +1,17 @@
-
-import { comparePasswordHelper } from '@/helpers';
 import { UsersService } from '@/modules/users/users.service';
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { Users } from '@/entities';
 import { UserStatus } from '@/enums';
+import { HashingPasswordProvider } from '@/common/providers/hashing-password.provider';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private usersService: UsersService,
-    private jwtService: JwtService
+    private readonly usersService: UsersService,
+    private readonly jwtService: JwtService,
+    private readonly hashingPasswordProvider: HashingPasswordProvider
   ) {}
 
   async login(user: any) {
@@ -36,7 +36,7 @@ export class AuthService {
       throw new BadRequestException('Your account is disabled! Please contact to admin')
     }
 
-    const isValidPassword = await comparePasswordHelper(pass, user.password);
+    const isValidPassword = await this.hashingPasswordProvider.comparePasswordHelper(pass, user.password);
 
     if (!isValidPassword) {
       throw new BadRequestException('The password did not match!')
