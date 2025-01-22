@@ -3,9 +3,10 @@ import { CreateSampleDto } from './dto/create-sample.dto';
 import { UpdateSampleDto } from './dto/update-sample.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Samples } from '@/entities';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { PaginationProvider } from '@/common/providers/pagination.provider';
 import * as dayjs from 'dayjs'
+import { FilterSampleDto } from './dto/filter-sample.dto';
 
 @Injectable()
 export class SamplesService {
@@ -19,9 +20,19 @@ export class SamplesService {
     return 'This action adds a new sample';
   }
 
-  async findAll(id: number, page: number, pageSize: number) {
-    const filters = {
+  async findAll(id: number, page: number, pageSize: number, filterSampleDto: FilterSampleDto) {
+    const filters: any = {
       user_id: id
+    }
+
+    if (filterSampleDto.type != '') {
+      filters.file_type = filterSampleDto.type
+    }
+    if (filterSampleDto.assembly != '') {
+      filters.assembly = filterSampleDto.assembly
+    }
+    if (filterSampleDto.searchTerm != '') {
+      filters.name = Like(`%${filterSampleDto.searchTerm}%`)
     }
 
     const results = await this.paginationProvider.paginate<Samples>(page, pageSize, this.samplesRepository, filters);

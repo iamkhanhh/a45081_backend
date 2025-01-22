@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Defaul
 import { SamplesService } from './samples.service';
 import { CreateSampleDto } from './dto/create-sample.dto';
 import { UpdateSampleDto } from './dto/update-sample.dto';
+import { FilterSampleDto } from './dto/filter-sample.dto';
 
 @Controller('samples')
 export class SamplesController {
@@ -12,13 +13,14 @@ export class SamplesController {
     return this.samplesService.create(createSampleDto);
   }
 
-  @Get()
+  @Post('load-samples')
   findAll(
     @Request() req,
     @Query('page', ParseIntPipe, new DefaultValuePipe(1)) page: number,
     @Query('pageSize', ParseIntPipe, new DefaultValuePipe(10)) pageSize: number,
+    @Body() filterSampleDto: FilterSampleDto
   ) {
-    return this.samplesService.findAll(req.user.id, page, pageSize);
+    return this.samplesService.findAll(req.user.id, page, pageSize, filterSampleDto);
   }
 
   @Get(':id')
