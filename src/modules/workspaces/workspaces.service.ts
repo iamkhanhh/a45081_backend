@@ -2,11 +2,12 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 import { Workspaces } from '@/entities';
-import { Repository } from 'typeorm';
+import { Like, Raw, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PipelinesService } from '../pipelines/pipelines.service';
 import * as dayjs from 'dayjs'
 import { PaginationProvider } from '@/common/providers/pagination.provider';
+import { FilterWorkspacesDto } from './dto/filter-workspaces.dto';
 
 @Injectable()
 export class WorkspacesService {
@@ -39,10 +40,18 @@ export class WorkspacesService {
     };
   }
 
-  async findAll(id: number, page: number, pageSize: number) {
-    const filters = {
+  async findAll(id: number, page: number, pageSize: number, filterWorkspacesDto: FilterWorkspacesDto) {
+    const filters: any = {
       user_created_id: id, 
       is_deleted: 0
+    }
+
+    if (filterWorkspacesDto.searchDate != '') {
+      filters.createdAt = Raw((alias) => `${alias} > :date`, { date: filterWorkspacesDto.searchDate})
+    }
+
+    if (filterWorkspacesDto.searchTerm != '') {
+      filters.name = Like(`%${filterWorkspacesDto.searchTerm}%`)
     }
 
     const results = await this.paginationProvider.paginate<Workspaces>(page, pageSize, this.workspacesRepository, filters);

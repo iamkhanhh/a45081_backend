@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Request, Query, Put,
 import { WorkspacesService } from './workspaces.service';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
+import { FilterWorkspacesDto } from './dto/filter-workspaces.dto';
 
 @Controller('workspaces')
 export class WorkspacesController {
@@ -15,13 +16,14 @@ export class WorkspacesController {
     return this.workspacesService.create(createWorkspaceDto, req.user.id);
   }
 
-  @Get()
+  @Post('load-workspaces')
   async findAll(
     @Request() req,
     @Query('page', ParseIntPipe, new DefaultValuePipe(1)) page: number,
     @Query('pageSize', ParseIntPipe, new DefaultValuePipe(10)) pageSize: number,
+    @Body() filterWorkspacesDto: FilterWorkspacesDto
   ) {
-    return await this.workspacesService.findAll(req.user.id, page, pageSize);
+    return await this.workspacesService.findAll(req.user.id, page, pageSize, filterWorkspacesDto);
   }
 
   @Get(':id')
