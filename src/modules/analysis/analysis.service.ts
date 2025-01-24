@@ -62,6 +62,10 @@ export class AnalysisService {
     };
   }
 
+  async deleteAnalysesByWorkspaceId(workspace_id: number) {
+    return await this.analysisRepository.update({project_id: workspace_id}, {is_deleted: 1});
+  }
+
   update(id: number, updateAnalysisDto: UpdateAnalysisDto) {
     return `This action updates a #${id} analysis`;
   }

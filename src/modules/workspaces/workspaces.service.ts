@@ -8,13 +8,16 @@ import { PipelinesService } from '../pipelines/pipelines.service';
 import * as dayjs from 'dayjs'
 import { PaginationProvider } from '@/common/providers/pagination.provider';
 import { FilterWorkspacesDto } from './dto/filter-workspaces.dto';
+import { DeleteMultipleWorkspacesDto } from './dto/delete-multiple-workspaces.dto';
+import { AnalysisService } from '../analysis/analysis.service';
 
 @Injectable()
 export class WorkspacesService {
 
   constructor(
     @InjectRepository(Workspaces) private workspacesRepository: Repository<Workspaces>,
-    private pipelinesService: PipelinesService,
+    private readonly pipelinesService: PipelinesService,
+    private readonly analysisService: AnalysisService,
     private readonly paginationProvider: PaginationProvider
   ) {}
 
@@ -120,9 +123,20 @@ export class WorkspacesService {
       throw new BadRequestException('That workspace could not be found')
     }
     await this.workspacesRepository.update({id}, {is_deleted: 1});
+    await this.analysisService.deleteAnalysesByWorkspaceId(id);
     return {
       status: 'success',
       message: 'Deleted successfully!'
     };
+  }
+
+  async deleteMultipleWorkspaces(deleteMultipleWorkspacesDto: DeleteMultipleWorkspacesDto) {
+    for (let workspace_id of deleteMultipleWorkspacesDto.ids) {
+      await this.remove(workspace_id);
+    }
+    return {
+      status: 'success',
+      message: 'Delete multiple workspaces successfully!'
+    }
   }
 }
