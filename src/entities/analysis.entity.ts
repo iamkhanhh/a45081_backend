@@ -10,16 +10,24 @@ export class Analysis extends AbstractEntity{
   @Column()
   user_id: number;
 
-  @Column()
+  @Column({
+    nullable: true
+  })
   data_type: string;
 
-  @Column()
+  @Column({
+    nullable: true
+  })
   control: string;
 
-  @Column()
+  @Column({
+    nullable: true
+  })
   genotype: string;
 
-  @Column()
+  @Column({
+    nullable: true
+  })
   igv_local_path: string;
 
   @Column()
@@ -50,7 +58,7 @@ export class Analysis extends AbstractEntity{
   file_path: string;
 
   @Column({ type: 'text'})
-  description: number;
+  description: string;
 
   @Column({default: 0})
   is_deleted: number;

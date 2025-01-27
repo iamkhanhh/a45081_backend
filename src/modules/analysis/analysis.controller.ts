@@ -8,8 +8,11 @@ export class AnalysisController {
   constructor(private readonly analysisService: AnalysisService) {}
 
   @Post()
-  create(@Body() createAnalysisDto: CreateAnalysisDto) {
-    return this.analysisService.create(createAnalysisDto);
+  create(
+    @Body() createAnalysisDto: CreateAnalysisDto,
+    @Request() req,
+  ) {
+    return this.analysisService.create(createAnalysisDto, req.user.id);
   }
 
   @Get()

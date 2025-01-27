@@ -9,4 +9,9 @@ export class S3Provider {
     constructor(
         private readonly configService: ConfigService
     ) {}
+
+    async copyObject(source: string, destination: string) {
+        console.log("source: ", source);
+        console.log("destination: ", destination);
+    }
 }

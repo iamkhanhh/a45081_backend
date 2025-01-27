@@ -27,22 +27,24 @@ export class Uploads extends AbstractEntity{
   @Column()
   sample_id: number;
 
-  @Column()
+  @Column({
+    nullable: true
+  })
   fastq_pair_index: number;
 
   @Column()
   upload_status: number;
 
   static getUploadStatus(status: number): string {
-		switch (status) {
-			case 0:
-				return 'Uploading';
-			case 1:
-				return 'Completed';
-			case 2:
-				return 'Error';
-			default:
-				return 'N/A'
-		}
-	}
+    switch (status) {
+      case 0:
+        return 'Uploading';
+      case 1:
+        return 'Completed';
+      case 2:
+        return 'Error';
+      default:
+        return 'N/A'
+    }
+  }
 }

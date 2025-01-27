@@ -17,7 +17,8 @@ import { S3Provider } from './providers/s3.provider';
   ],
   exports: [
     PaginationProvider,
-    HashingPasswordProvider
+    HashingPasswordProvider,
+    S3Provider
   ]
 })
 export class CommonModule {}
