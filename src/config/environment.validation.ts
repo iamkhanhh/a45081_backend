@@ -13,5 +13,13 @@ export default Joi.object({
     JWT_ACCESS_TOKEN_EXPIRED: Joi.string().required(),
     MAIL_USER: Joi.string().required(),
     MAIL_PASSWORD: Joi.string().required(),
-    MAIL_HOST: Joi.string().required()
+    MAIL_HOST: Joi.string().required(),
+    AWS_ACCESS_KEY: Joi.string().required(),
+    AWS_SECRET_KEY: Joi.string().required(),
+    AWS_BUCKET: Joi.string().required(),
+    AWS_REGION: Joi.string().required(),
+    MOUNT_FOLDER: Joi.string().required(),
+    EXPORT_FOLDER: Joi.string().required(),
+    ANALYSIS_FOLDER: Joi.string().required(),
+    UPLOAD_FOLDER: Joi.string().required(),
 });
