@@ -52,12 +52,10 @@ export class AnalysisService {
 
     for (let e of uploads) {
       let destination = `${this.configService.get<string>('ANALYSIS_FOLDER')}/${result.user_id}/${result.id}/${e.upload_name}`
-      let source = e.file_path
+      let source = `${this.configService.get<string>('AWS_BUCKET')}/${this.configService.get<string>('UPLOAD_FOLDER')}/${e.file_path}`
 
       await this.s3Provider.copyObject(source, destination);
     }
-
-    console.log("data_saved: ", data_saved)
 
     return {
       status: 'success',
