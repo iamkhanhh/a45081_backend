@@ -79,20 +79,22 @@ export class Analysis extends AbstractEntity{
   static getAnalysisStatus(status): string {
 		switch(status) {
 			case AnalysisStatus.QUEUING: 
+        return 'VCF Queuing'
 			case AnalysisStatus.FASTQ_QUEUING: 
-				return 'Queuing'
+				return 'FASTQ Queuing'
+      case AnalysisStatus.FASTQ_ANALYZING:
+        return 'FASTQ Analyzing'
 			case AnalysisStatus.ANALYZING:
-			case AnalysisStatus.FASTQ_ANALYZING:
 			case AnalysisStatus.VEP_ANALYZED:
 			case AnalysisStatus.IMPORTING:
-				return 'Analyzing'
+				return 'VCF Analyzing'
 			case AnalysisStatus.ANALYZED:
 				return 'Analyzed'
 			case AnalysisStatus.ERROR:
 			case AnalysisStatus.FASTQ_ERROR:
 				return 'Error';
 			default:
-				return 'Queuing'
+				return 'Error'
 		}
 	}
 }

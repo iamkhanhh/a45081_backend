@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Request, Query, Pars
 import { AnalysisService } from './analysis.service';
 import { CreateAnalysisDto } from './dto/create-analysis.dto';
 import { UpdateAnalysisDto } from './dto/update-analysis.dto';
+import { FilterAnalysisDto } from './dto/filter-analysis.dto';
 
 @Controller('analysis')
 export class AnalysisController {
@@ -25,14 +26,15 @@ export class AnalysisController {
     return this.analysisService.findOne(id);
   }
 
-  @Get('getAnalysesByWorkspaceId/:id')
+  @Post('getAnalysesByWorkspaceId/:id')
   async getAnalysesByWorkspaceId(
     @Request() req,
     @Query('page', ParseIntPipe, new DefaultValuePipe(1)) page: number,
     @Query('pageSize', ParseIntPipe, new DefaultValuePipe(10)) pageSize: number,
-    @Param('id', ParseIntPipe) id: number
+    @Param('id', ParseIntPipe) id: number,
+    @Body() filterAnalysisDto: FilterAnalysisDto
   ) {
-    return await this.analysisService.getAnalysesByWorkspaceId(id, req.user.id, page, pageSize);
+    return await this.analysisService.getAnalysesByWorkspaceId(id, req.user.id, page, pageSize, filterAnalysisDto);
   }
 
   @Patch(':id')

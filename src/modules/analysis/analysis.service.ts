@@ -3,7 +3,7 @@ import { CreateAnalysisDto } from './dto/create-analysis.dto';
 import { UpdateAnalysisDto } from './dto/update-analysis.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Analysis } from '@/entities';
-import { Repository } from 'typeorm';
+import { In, Like, Repository } from 'typeorm';
 import * as dayjs from 'dayjs'
 import { PipelinesService } from '../pipelines/pipelines.service';
 import { PaginationProvider } from '@/common/providers/pagination.provider';
@@ -11,6 +11,8 @@ import { AnalysisStatus } from '@/enums';
 import { UploadsService } from '../uploads/uploads.service';
 import { ConfigService } from '@nestjs/config';
 import { S3Provider } from '@/common/providers/s3.provider';
+import { FilterAnalysisDto } from './dto/filter-analysis.dto';
+import { SamplesService } from '../samples/samples.service';
 
 @Injectable()
 export class AnalysisService {
@@ -20,9 +22,10 @@ export class AnalysisService {
     private readonly pipelinesService: PipelinesService,
     private readonly paginationProvider: PaginationProvider,
     private readonly uploadsService: UploadsService,
+    private readonly samplesService: SamplesService,
     private readonly configService: ConfigService,
     private readonly s3Provider: S3Provider
-  ) {}
+  ) { }
 
   async create(createAnalysisDto: CreateAnalysisDto, user_id: number) {
     console.log(createAnalysisDto);
@@ -45,10 +48,10 @@ export class AnalysisService {
     } else {
       newAnalysis.status = AnalysisStatus.FASTQ_QUEUING;
     }
-    
+
     const result = await this.analysisRepository.save(newAnalysis);
     let igv_local_path = `user_files/${user_id}/${result.id}`;
-    const data_saved = await this.analysisRepository.update({id: result.id}, { igv_local_path, upload_id: uploads[0].id });
+    await this.analysisRepository.update({ id: result.id }, { igv_local_path, upload_id: uploads[0].id });
 
     for (let e of uploads) {
       let destination = `${this.configService.get<string>('ANALYSIS_FOLDER')}/${result.user_id}/${result.id}/${e.upload_name}`
@@ -71,11 +74,35 @@ export class AnalysisService {
     return `This action returns a #${id} analysis`;
   }
 
-  async getAnalysesByWorkspaceId(workspace_id: number, user_id: number, page: number, pageSize: number) {
-    const filters = {
+  async getAnalysesByWorkspaceId(workspace_id: number, user_id: number, page: number, pageSize: number, filterAnalysisDto: FilterAnalysisDto) {
+    const filters: any = {
       project_id: workspace_id,
-      user_id: user_id, 
-      is_deleted: 0 
+      user_id: user_id,
+      is_deleted: 0
+    }
+
+    if (filterAnalysisDto.status != '') {
+      const statusMap = {
+        queuing: [AnalysisStatus.QUEUING, AnalysisStatus.FASTQ_QUEUING],
+        analyzing: [AnalysisStatus.ANALYZING, AnalysisStatus.FASTQ_ANALYZING, AnalysisStatus.VEP_ANALYZED, AnalysisStatus.IMPORTING],
+        analyzed: [AnalysisStatus.ANALYZED],
+        error: [AnalysisStatus.ERROR, AnalysisStatus.FASTQ_ERROR]
+      };
+
+      const statuses = statusMap[filterAnalysisDto.status.toLowerCase()];
+      if (statuses) {
+        filters.status = In(statuses);
+      }
+    }
+    if (filterAnalysisDto.assembly != '') {
+      filters.assembly = filterAnalysisDto.assembly
+    }
+    if (filterAnalysisDto.analysisName != '') {
+      filters.name = Like(`%${filterAnalysisDto.analysisName}%`)
+    }
+    if (filterAnalysisDto.sampleName != '') {
+      const temp = await this.samplesService.getSamplesBySampleName(filterAnalysisDto.sampleName);
+      filters.sample_id = In(temp);
     }
 
     const results = await this.paginationProvider.paginate(page, pageSize, this.analysisRepository, filters);
@@ -92,7 +119,6 @@ export class AnalysisService {
         updatedAt: updatedAt,
         analyzed: analysis.analyzed,
         variants: analysis.variants,
-        size: analysis.size,
         status: Analysis.getAnalysisStatus(analysis.status),
       }
     }));
@@ -105,7 +131,7 @@ export class AnalysisService {
   }
 
   async deleteAnalysesByWorkspaceId(workspace_id: number) {
-    return await this.analysisRepository.update({project_id: workspace_id}, {is_deleted: 1});
+    return await this.analysisRepository.update({ project_id: workspace_id }, { is_deleted: 1 });
   }
 
   update(id: number, updateAnalysisDto: UpdateAnalysisDto) {
@@ -113,11 +139,11 @@ export class AnalysisService {
   }
 
   async remove(id: number) {
-    const analysis = await this.analysisRepository.findOne({where: {id}});
+    const analysis = await this.analysisRepository.findOne({ where: { id } });
     if (!analysis) {
       throw new BadRequestException('That analysis could not be found')
     }
-    await this.analysisRepository.update({id}, {is_deleted: 1});
+    await this.analysisRepository.update({ id }, { is_deleted: 1 });
     return {
       status: 'success',
       message: 'Deleted successfully!'

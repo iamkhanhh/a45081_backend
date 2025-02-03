@@ -85,6 +85,16 @@ export class SamplesService {
     }
   }
 
+  async getSamplesBySampleName(sampleName: string) {
+    const samples = await this.samplesRepository.find({
+      where: {
+        name: Like(`%${sampleName}%`)
+      }
+    })
+
+    return samples.map(sample => sample.id);
+  }
+
   update(id: number, updateSampleDto: UpdateSampleDto) {
     return `This action updates a #${id} sample`;
   }

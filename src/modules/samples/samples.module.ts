@@ -10,5 +10,6 @@ import { Samples } from '@/entities';
   ],
   controllers: [SamplesController],
   providers: [SamplesService],
+  exports: [SamplesService],
 })
 export class SamplesModule {}

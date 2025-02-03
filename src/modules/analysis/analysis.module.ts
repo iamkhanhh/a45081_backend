@@ -5,12 +5,14 @@ import { Analysis } from '@/entities';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PipelinesModule } from '../pipelines/pipelines.module';
 import { UploadsModule } from '../uploads/uploads.module';
+import { SamplesModule } from '../samples/samples.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Analysis]),
     PipelinesModule,
-    UploadsModule
+    UploadsModule,
+    SamplesModule
   ],
   controllers: [AnalysisController],
   providers: [AnalysisService],
