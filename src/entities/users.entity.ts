@@ -3,7 +3,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 import { AbstractEntity } from './abstract.entity';
 
 @Entity()
-export class Users extends AbstractEntity{
+export class Users extends AbstractEntity {
   @Column()
   first_name: string;
 
@@ -45,7 +45,7 @@ export class Users extends AbstractEntity{
       case UserStatus.PENDING:
         return 'Pending';
       default:
-        return 'Unknown';
+        return 'N/A';
     }
   }
 
@@ -56,19 +56,23 @@ export class Users extends AbstractEntity{
       case UserRole.USER:
         return 'User';
       default:
-        return 'Unknown';
+        return 'N/A';
     }
   }
 
   static getUserStatusNumber(status: string): UserStatus {
     switch (status) {
       case 'Active':
+      case 'active':
         return UserStatus.ACTIVE;
       case 'Deleted':
+      case 'deleted':
         return UserStatus.DELETED;
-      case 'Disabled':
+      case 'Deleted':
+      case 'deleted':
         return UserStatus.DISABLED;
       case 'Pending':
+      case 'pending':
         return UserStatus.PENDING;
       default:
         return UserStatus.PENDING;
@@ -78,8 +82,10 @@ export class Users extends AbstractEntity{
   static getUserRoleNumber(role: string): UserRole {
     switch (role) {
       case 'Admin':
+      case 'admin':
         return UserRole.ADMIN;
       case 'User':
+      case 'user':
         return UserRole.USER;
       default:
         return UserRole.USER;

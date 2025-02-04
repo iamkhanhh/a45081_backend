@@ -7,10 +7,12 @@ import { v4 as uuidv4 } from 'uuid';
 import * as dayjs from 'dayjs';
 import { MailerService } from '@nestjs-modules/mailer';
 import { Users } from '@/entities';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserRole, UserStatus } from '@/enums';
 import { HashingPasswordProvider } from '@/common/providers/hashing-password.provider';
+import { FilterUsersDto } from './dto/filter-users.dto';
+import { PaginationProvider } from '@/common/providers/pagination.provider';
 
 @Injectable()
 export class UsersService {
@@ -18,11 +20,12 @@ export class UsersService {
   constructor(
     @InjectRepository(Users) private usersRepository: Repository<Users>,
     private readonly mailerService: MailerService,
-    private readonly hashingPasswordProvider: HashingPasswordProvider
-  ) {}
+    private readonly hashingPasswordProvider: HashingPasswordProvider,
+    private readonly paginationProvider: PaginationProvider
+  ) { }
 
   async create(createUserDto: CreateUserDto) {
-    const {name, email, password, phone, address, image} = createUserDto;
+    const { name, email, password, phone, address, image } = createUserDto;
 
     const hashPassword = await this.hashingPasswordProvider.hashPasswordHelper(password);
 
@@ -41,32 +44,51 @@ export class UsersService {
     };
   }
 
-  async isEMailExist (email: string) {
+  async isEMailExist(email: string) {
     const user = await this.usersRepository.exists({ where: { email: email } });
     return user ? true : false;
   }
 
-  async findAll(query: string, current: number, pageSize: number) {
-    const {filter, sort} = aqp(query);
-    if (filter.current) delete filter.current;
-    if (filter.pageSize) delete filter.pageSize;
-    if (!current) current = 1;
-    if (!pageSize) pageSize = 10;
+  async findAll(page: number, pageSize: number, filterUsersDto: FilterUsersDto) {
+    let filters: any = {};
 
-    const totalItems = (await this.usersRepository.find(filter)).length;
-    const totalPages = Math.ceil(totalItems / pageSize);
+    if (filterUsersDto.searchTerm != '') {
+      // let searchTerm = `%${filterUsersDto.searchTerm}%`;
+      // let orTerm = [
+      //   { first_name: Like(searchTerm) },
+      //   { last_name: Like(searchTerm) },
+      //   { email: Like(searchTerm) }
+      // ];
+      // filters = {...orTerm};
+      filters.email = Like(`%${filterUsersDto.searchTerm}%`);
+    }
 
-    const offset = (current - 1) * pageSize;
+    if (filterUsersDto.role != '') {
+      filters.role = Users.getUserRoleNumber(filterUsersDto.role);
+    }
 
-    const results = await this.usersRepository
-    .find(filter)
-    // .limit(pageSize)
-    // .skip(offset)
-    // .sort(sort as any)
+    if (filterUsersDto.status != '') {
+      filters.status = Users.getUserStatusNumber(filterUsersDto.status);
+    }
+
+    const results = await this.paginationProvider.paginate<Users>(page, pageSize, this.usersRepository, filters);
+
+    const data = await Promise.all(results.data.map(async (user) => {
+      const formatted_date = dayjs(user.createdAt).format('DD/MM/YYYY');
+      return {
+        id: user.id,
+        name: `${user.first_name} ${user.last_name}`,
+        email: user.email,
+        role: Users.getUserRole(user.role),
+        status: Users.getUserStatus(user.status),
+        createdAt: formatted_date,
+      }
+    }));
 
     return {
-      results,
-      totalPages
+      ...results,
+      data,
+      message: 'List all users successfully!'
     };
   }
 
@@ -74,16 +96,16 @@ export class UsersService {
     return `This action returns a #${id} user`;
   }
 
-  async getUserById(id : number) {
-    return await this.usersRepository.findOne({where: { id }});
+  async getUserById(id: number) {
+    return await this.usersRepository.findOne({ where: { id } });
   }
 
   async findByEmail(email: string) {
-    return await this.usersRepository.findOne({where: { email }});
+    return await this.usersRepository.findOne({ where: { email } });
   }
 
   async update(updateUserDto: UpdateUserDto) {
-    return await this.usersRepository.update({id: updateUserDto.id}, {...updateUserDto});
+    return await this.usersRepository.update({ id: updateUserDto.id }, { ...updateUserDto });
   }
 
   async remove(id: number) {
@@ -94,7 +116,7 @@ export class UsersService {
   }
 
   async register(createAuthDto: CreateAuthDto) {
-    const {email, password, first_name, last_name, phone_number} = createAuthDto;
+    const { email, password, first_name, last_name, phone_number } = createAuthDto;
 
     const isEmailExist = await this.isEMailExist(email);
     if (isEmailExist) {
@@ -116,15 +138,15 @@ export class UsersService {
     const savedUser = await this.usersRepository.save(newUser);
 
     this.mailerService
-    .sendMail({
-      to: savedUser.email,
-      subject: 'Activate your account',
-      template: "register",
-      context: {
-        name: savedUser.first_name && savedUser.last_name ? `${savedUser.first_name} ${savedUser.last_name}` : savedUser.email,
-        activationCode: codeId
-      }
-    })
+      .sendMail({
+        to: savedUser.email,
+        subject: 'Activate your account',
+        template: "register",
+        context: {
+          name: savedUser.first_name && savedUser.last_name ? `${savedUser.first_name} ${savedUser.last_name}` : savedUser.email,
+          activationCode: codeId
+        }
+      })
 
     return {
       status: 'success',
@@ -136,24 +158,24 @@ export class UsersService {
   }
 
   async activateAccount(code: string, id: number) {
-    const user = await this.usersRepository.findOne({where: {id}});
+    const user = await this.usersRepository.findOne({ where: { id } });
     if (!user) {
-      throw new BadRequestException('This account is not exist!') 
+      throw new BadRequestException('This account is not exist!')
     }
 
     const isCodeValid = new Date() < user.codeExpired;
     if (isCodeValid) {
       if (code == user.codeId) {
-        await this.usersRepository.update({id}, {status: UserStatus.ACTIVE});
+        await this.usersRepository.update({ id }, { status: UserStatus.ACTIVE });
         return {
           status: 'success',
           message: 'Your account has been active!!'
         }
       } else {
-        throw new BadRequestException('Code active is not correct!') 
+        throw new BadRequestException('Code active is not correct!')
       }
     } else {
-      throw new BadRequestException('Code active has been expired! Please get another code!') 
+      throw new BadRequestException('Code active has been expired! Please get another code!')
     }
   }
 
@@ -163,25 +185,25 @@ export class UsersService {
       throw new BadRequestException(`${email} has not been existed! Please use another email!`)
     }
 
-    const user = await this.usersRepository.findOne({where: {email}});
+    const user = await this.usersRepository.findOne({ where: { email } });
     if (!user) {
-      throw new BadRequestException('This account is not exist!') 
+      throw new BadRequestException('This account is not exist!')
     }
 
     const codeId = uuidv4();
     const hashPassword = await this.hashingPasswordProvider.hashPasswordHelper(codeId);
-    await this.usersRepository.update({id: user.id}, {password: hashPassword});
+    await this.usersRepository.update({ id: user.id }, { password: hashPassword });
 
     this.mailerService
-    .sendMail({
-      to: user.email,
-      subject: 'Temp password',
-      template: "forgot-password",
-      context: {
-        name: user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.email,
-        tempPassword: codeId
-      }
-    })
+      .sendMail({
+        to: user.email,
+        subject: 'Temp password',
+        template: "forgot-password",
+        context: {
+          name: user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.email,
+          tempPassword: codeId
+        }
+      })
 
     return {
       status: 'success',

@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseIntPipe, DefaultValuePipe } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { query } from 'express';
+import { FilterUsersDto } from './dto/filter-users.dto';
 
 @Controller('users')
 export class UsersController {
@@ -13,13 +14,13 @@ export class UsersController {
     return this.usersService.create(createUserDto);
   }
 
-  @Get()
+  @Post('load-users')
   findAll(
-    @Query('query') query: string,
-    @Query('current') current: string,
-    @Query('pageSize') pageSize: string,
+    @Query('page', ParseIntPipe, new DefaultValuePipe(1)) page: number,
+    @Query('pageSize', ParseIntPipe, new DefaultValuePipe(10)) pageSize: number,
+    @Body() filterUsersDto: FilterUsersDto
   ) {
-    return this.usersService.findAll(query, +current, +pageSize);
+    return this.usersService.findAll(page, pageSize, filterUsersDto);
   }
 
   @Get(':id')
