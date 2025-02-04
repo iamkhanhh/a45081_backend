@@ -13,6 +13,7 @@ import { UserRole, UserStatus } from '@/enums';
 import { HashingPasswordProvider } from '@/common/providers/hashing-password.provider';
 import { FilterUsersDto } from './dto/filter-users.dto';
 import { PaginationProvider } from '@/common/providers/pagination.provider';
+import { DeleteMultipleUsersDto } from './dto/delete-multiple-users.dto';
 
 @Injectable()
 export class UsersService {
@@ -109,10 +110,21 @@ export class UsersService {
   }
 
   async remove(id: number) {
-    // if (mongoose.isValidObjectId(id)) {
-    //   return await this.usersRepository.deleteOne({id});
-    // }
-    throw new BadRequestException('id format is not valid')
+    await this.usersRepository.update({ id }, { status: UserStatus.DELETED });
+    return {
+      status: 'success',
+      message: 'Delete user successfully'
+    }
+  }
+
+  async removeMultipleUsers(deleteMultipleUsersDto: DeleteMultipleUsersDto) {
+    for (let id of deleteMultipleUsersDto.ids) {
+      await this.remove(id);
+    }
+    return {
+      status: 'success',
+      message: 'Delete users successfully'
+    }
   }
 
   async register(createAuthDto: CreateAuthDto) {

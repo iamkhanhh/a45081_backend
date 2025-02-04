@@ -4,6 +4,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { query } from 'express';
 import { FilterUsersDto } from './dto/filter-users.dto';
+import { DeleteMultipleUsersDto } from './dto/delete-multiple-users.dto';
 
 @Controller('users')
 export class UsersController {
@@ -31,6 +32,13 @@ export class UsersController {
   @Patch()
   update(@Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(updateUserDto);
+  }
+
+  @Delete('multiple-user')
+  removeMultipleUsers(
+    @Body() deleteMultipleUsersDto: DeleteMultipleUsersDto
+  ) {
+    return this.usersService.removeMultipleUsers(deleteMultipleUsersDto);
   }
 
   @Delete(':id')
