@@ -68,8 +68,8 @@ export class Users extends AbstractEntity {
       case 'Deleted':
       case 'deleted':
         return UserStatus.DELETED;
-      case 'Deleted':
-      case 'deleted':
+      case 'Disabled':
+      case 'disabled':
         return UserStatus.DISABLED;
       case 'Pending':
       case 'pending':

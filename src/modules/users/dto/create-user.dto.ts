@@ -1,22 +1,35 @@
-import { IsEmail, IsNotEmpty, IsOptional } from "class-validator";
+import { IsEmail, IsNotEmpty, IsOptional, IsString, Matches, MinLength } from "class-validator";
 
 export class CreateUserDto {
   @IsNotEmpty()
-  name: string;
-
-  @IsNotEmpty()
   @IsEmail()
-  email: string;
-  
+  email: string
+
   @IsNotEmpty()
-  password: string;
+  @IsString()
+  @MinLength(5)
+  @Matches(/^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{5,}$/, {
+      message: 'Minimum five characters, at least one letter, one number and one special character',
+  }) 
+  password: string
 
   @IsOptional()
-  phone: string;
+  @IsString()
+  first_name: string
 
   @IsOptional()
-  address: string;
+  @IsString()
+  last_name: string
 
   @IsOptional()
-  image: string;
+  @IsString()
+  phone_number: string
+
+  @IsOptional()
+  @IsString()
+  role: string
+
+  @IsOptional()
+  @IsString()
+  status: string
 }

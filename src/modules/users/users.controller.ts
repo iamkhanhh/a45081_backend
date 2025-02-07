@@ -1,8 +1,7 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseIntPipe, DefaultValuePipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseIntPipe, DefaultValuePipe, Request } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { query } from 'express';
 import { FilterUsersDto } from './dto/filter-users.dto';
 import { DeleteMultipleUsersDto } from './dto/delete-multiple-users.dto';
 
@@ -11,8 +10,11 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  create(@Body() createUserDto: any) {
-    return this.usersService.create(createUserDto);
+  create(
+    @Body() createUserDto: CreateUserDto,
+    @Request() req
+  ) {
+    return this.usersService.create(createUserDto, req.user.id);
   }
 
   @Post('load-users')
@@ -26,7 +28,7 @@ export class UsersController {
 
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.usersService.findOne(+id);
+    return this.usersService.findOne(id);
   }
 
   @Patch()

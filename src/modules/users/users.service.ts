@@ -25,23 +25,28 @@ export class UsersService {
     private readonly paginationProvider: PaginationProvider
   ) { }
 
-  async create(createUserDto: CreateUserDto) {
-    const { name, email, password, phone, address, image } = createUserDto;
-
-    const hashPassword = await this.hashingPasswordProvider.hashPasswordHelper(password);
-
-    const isEmailExist = await this.isEMailExist(email);
+  async create(createUserDto: CreateUserDto, user_id: number) {
+    const isEmailExist = await this.isEMailExist(createUserDto.email);
     if (isEmailExist) {
-      throw new BadRequestException(`${email} has been existed! Please use another email`)
+      throw new BadRequestException(`${createUserDto.email} has been existed! Please use another email`)
     }
 
+    const hashPassword = await this.hashingPasswordProvider.hashPasswordHelper(createUserDto.password);
+
     const newUser = new Users();
-    newUser.email = email;
+    newUser.email = createUserDto.email;
     newUser.password = hashPassword;
-    const savedUser = await this.usersRepository.save(newUser);
+    newUser.first_name = createUserDto.first_name;
+    newUser.last_name = createUserDto.last_name;
+    newUser.phone_number = createUserDto.phone_number;
+    newUser.role = Users.getUserRoleNumber(createUserDto.role);
+    newUser.status = Users.getUserStatusNumber(createUserDto.status);
+    newUser.user_created = user_id;
+    await this.usersRepository.save(newUser);
 
     return {
-      id: savedUser.id
+      status: "success",
+      messsage: "Create user successfully"
     };
   }
 
@@ -93,12 +98,13 @@ export class UsersService {
     };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
-  }
-
-  async getUserById(id: number) {
-    return await this.usersRepository.findOne({ where: { id } });
+  async findOne(id: number) {
+    let results = await this.usersRepository.findOne({ where: { id } });
+    return {
+      ...results,
+      role: Users.getUserRole(results.role),
+      status: Users.getUserStatus(results.status),
+    }
   }
 
   async findByEmail(email: string) {
@@ -106,7 +112,21 @@ export class UsersService {
   }
 
   async update(updateUserDto: UpdateUserDto) {
-    return await this.usersRepository.update({ id: updateUserDto.id }, { ...updateUserDto });
+    let data = {
+      ...updateUserDto,
+      role: Users.getUserRoleNumber(updateUserDto.role),
+      status: Users.getUserStatusNumber(updateUserDto.status),
+    }
+    if (data.password) {
+      data.password = await this.hashingPasswordProvider.hashPasswordHelper(data.password);
+    } else {
+      delete data.password; 
+    }
+    await this.usersRepository.update({email: data.email}, {...data});
+    return {
+      status: 'success',
+      message: 'Update user successfully'
+    }
   }
 
   async remove(id: number) {
