@@ -7,13 +7,15 @@ import { Like, Repository } from 'typeorm';
 import { PaginationProvider } from '@/common/providers/pagination.provider';
 import * as dayjs from 'dayjs'
 import { FilterSampleDto } from './dto/filter-sample.dto';
+import { S3Provider } from '@/common/providers/s3.provider';
 
 @Injectable()
 export class SamplesService {
 
   constructor(
     @InjectRepository(Samples) private samplesRepository: Repository<Samples>,
-    private readonly paginationProvider: PaginationProvider
+    private readonly paginationProvider: PaginationProvider,
+    private readonly s3Provider: S3Provider
   ) { }
 
   create(createSampleDto: CreateSampleDto) {
@@ -26,13 +28,13 @@ export class SamplesService {
     }
 
     if (filterSampleDto.type != '') {
-      filters.file_type = filterSampleDto.type
+      filters.file_type = filterSampleDto.type;
     }
     if (filterSampleDto.assembly != '') {
-      filters.assembly = filterSampleDto.assembly
+      filters.assembly = filterSampleDto.assembly;
     }
     if (filterSampleDto.searchTerm != '') {
-      filters.name = Like(`%${filterSampleDto.searchTerm}%`)
+      filters.name = Like(`%${filterSampleDto.searchTerm}%`);
     }
 
     const results = await this.paginationProvider.paginate<Samples>(page, pageSize, this.samplesRepository, filters);
@@ -82,6 +84,16 @@ export class SamplesService {
       status: 'success',
       message: 'getSamplesByPipeLine successfully!',
       data: samples
+    }
+  }
+
+  async generateSinglePresignedUrl(fileName: string) {
+    return {
+      status: 'success',
+      message: 'Generate single presigned url successfully',
+      data: {
+        url: await this.s3Provider.generateSinglePresignedUrl(fileName)
+      }
     }
   }
 

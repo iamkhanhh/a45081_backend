@@ -3,6 +3,7 @@ import { SamplesService } from './samples.service';
 import { CreateSampleDto } from './dto/create-sample.dto';
 import { UpdateSampleDto } from './dto/update-sample.dto';
 import { FilterSampleDto } from './dto/filter-sample.dto';
+import { GenerateSinglePresignedUrl } from './dto/generate-single-presigned-url.dto';
 
 @Controller('samples')
 export class SamplesController {
@@ -21,6 +22,13 @@ export class SamplesController {
     @Body() filterSampleDto: FilterSampleDto
   ) {
     return this.samplesService.findAll(req.user.id, page, pageSize, filterSampleDto);
+  }
+
+  @Post('generateSinglePresignedUrl')
+  generateSinglePresignedUrl(
+    @Body() generateSinglePresignedUrl: GenerateSinglePresignedUrl
+  ) {
+    return this.samplesService.generateSinglePresignedUrl(generateSinglePresignedUrl.fileName);
   }
 
   @Get(':id')
