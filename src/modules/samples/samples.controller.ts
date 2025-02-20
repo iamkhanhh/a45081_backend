@@ -4,6 +4,7 @@ import { CreateSampleDto } from './dto/create-sample.dto';
 import { UpdateSampleDto } from './dto/update-sample.dto';
 import { FilterSampleDto } from './dto/filter-sample.dto';
 import { GenerateSinglePresignedUrl } from './dto/generate-single-presigned-url.dto';
+import { PostFileInforDto } from './dto/post-file-infor.dto';
 
 @Controller('samples')
 export class SamplesController {
@@ -26,9 +27,18 @@ export class SamplesController {
 
   @Post('generateSinglePresignedUrl')
   generateSinglePresignedUrl(
-    @Body() generateSinglePresignedUrl: GenerateSinglePresignedUrl
+    @Body() generateSinglePresignedUrl: GenerateSinglePresignedUrl,
+    @Request() req,
   ) {
-    return this.samplesService.generateSinglePresignedUrl(generateSinglePresignedUrl.fileName);
+    return this.samplesService.generateSinglePresignedUrl(generateSinglePresignedUrl.fileName, req.user.id);
+  }
+
+  @Post('postFileInfor')
+  postFileInfor(
+    @Body() postFileInforDto: PostFileInforDto,
+    @Request() req,
+  ) {
+    return this.samplesService.postFileInfor(postFileInforDto, req.user.id);
   }
 
   @Get(':id')

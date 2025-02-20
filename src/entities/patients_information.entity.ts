@@ -2,7 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 import { AbstractEntity } from './abstract.entity';
 
 @Entity()
-export class PatientInformation extends AbstractEntity{
+export class PatientsInformation extends AbstractEntity{
   @Column()
   first_name: string;
 

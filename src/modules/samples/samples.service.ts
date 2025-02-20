@@ -2,12 +2,18 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateSampleDto } from './dto/create-sample.dto';
 import { UpdateSampleDto } from './dto/update-sample.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Samples } from '@/entities';
+import { Samples, Uploads } from '@/entities';
 import { Like, Repository } from 'typeorm';
 import { PaginationProvider } from '@/common/providers/pagination.provider';
 import * as dayjs from 'dayjs'
 import { FilterSampleDto } from './dto/filter-sample.dto';
 import { S3Provider } from '@/common/providers/s3.provider';
+import { PostFileInforDto } from './dto/post-file-infor.dto';
+import { ConfigService } from '@nestjs/config';
+import { SampleStatus } from '@/enums/samples.enum';
+import { UploadStatus } from '@/enums/uploads.enum';
+import { UploadsService } from '../uploads/uploads.service';
+import { PatientsInformationService } from '../patient-information/patient-information.service';
 
 @Injectable()
 export class SamplesService {
@@ -15,7 +21,10 @@ export class SamplesService {
   constructor(
     @InjectRepository(Samples) private samplesRepository: Repository<Samples>,
     private readonly paginationProvider: PaginationProvider,
-    private readonly s3Provider: S3Provider
+    private readonly s3Provider: S3Provider,
+    private readonly configService: ConfigService,
+    private readonly uploadsService: UploadsService,
+    private readonly patientsInformationService: PatientsInformationService,
   ) { }
 
   create(createSampleDto: CreateSampleDto) {
@@ -87,14 +96,82 @@ export class SamplesService {
     }
   }
 
-  async generateSinglePresignedUrl(fileName: string) {
+  async generateSinglePresignedUrl(fileName: string, user_id: number) {
+    let uploadName = this.s3Provider.generateFileName(fileName);
     return {
       status: 'success',
       message: 'Generate single presigned url successfully',
       data: {
-        url: await this.s3Provider.generateSinglePresignedUrl(fileName)
+        url: await this.s3Provider.generateSinglePresignedUrl(`${this.configService.get('UPLOAD_FOLDER')}/${user_id}/${uploadName}`),
+        uploadName
       }
     }
+  }
+
+  async postFileInfor(postFileInforDto: PostFileInforDto, user_id: number) {
+    let uploadInfor = {
+      original_name: postFileInforDto.original_name,
+      file_size: postFileInforDto.file_size,
+      file_type: postFileInforDto.file_type,
+      upload_name: postFileInforDto.upload_name,
+      user_created: user_id,
+      file_path: `${this.configService.get('UPLOAD_FOLDER')}/${user_id}/${postFileInforDto.upload_name}`,
+      is_deleted: 0,
+      upload_status: UploadStatus.COMPLETED
+    }
+
+    let sampleInfor = {
+      name: postFileInforDto.sample_name,
+      user_id: user_id,
+      file_size: postFileInforDto.file_size,
+      file_type: postFileInforDto.file_type,
+      assembly: postFileInforDto.assembly,
+      complete_status: SampleStatus.COMPLETED
+    }
+
+    // create upload
+    const upload = await this.uploadsService.createUploadForSample(uploadInfor);
+    if (!upload) {
+      throw new BadRequestException('There was an error creating the upload information!');
+    }
+
+    // create sample
+    const sample = await this.createSample(sampleInfor);
+    if (!sample) {
+      throw new BadRequestException('Sample created failed!');
+    }
+    await this.uploadsService.updateSampleId(upload.id, sample.id);
+
+    // create patient infor
+    let patientInfor = {
+      first_name: postFileInforDto.first_name,
+      last_name: postFileInforDto.last_name,
+      dob: postFileInforDto.dob,
+      phenotype: postFileInforDto.phenotype,
+      sample_id: sample.id
+    }
+    const patient = await this.patientsInformationService.create(patientInfor);
+    if (!patient) {
+      throw new BadRequestException('Patient Information create failed')
+    }
+
+    return {
+      status: 'success',
+      message: 'Create sample successfully'
+    }
+  }
+
+  async createSample(data) {
+    let new_sample = new Samples();
+
+    new_sample.name = data.name
+    new_sample.user_id = data.user_id
+    new_sample.file_size = data.file_size
+    new_sample.file_type = data.file_type
+    new_sample.assembly = data.assembly
+    new_sample.complete_status = data.complete_status
+
+    return await this.samplesRepository.save(new_sample);
   }
 
   async getSamplesBySampleName(sampleName: string) {

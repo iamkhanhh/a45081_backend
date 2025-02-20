@@ -1,6 +1,6 @@
 export * from './analysis.entity'
 export * from './gene_clinical_synopsis.entity'
-export * from './patient_information.entity'
+export * from './patients_information.entity'
 export * from './pipelines.entity'
 export * from './samples.entity'
 export * from './uploads.entity'

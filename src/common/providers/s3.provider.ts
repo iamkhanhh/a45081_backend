@@ -35,7 +35,7 @@ export class S3Provider {
     async generateSinglePresignedUrl(fileName: string): Promise<string> {
         const params = {
             Bucket: this.configService.get<string>('AWS_BUCKET'),
-            Key: this.generateFileName(fileName),
+            Key: fileName,
             Expires: 60 * 5,
             // ACL: 'bucket-owner-full-control',
             ContentType: 'text/vcard',
@@ -88,7 +88,7 @@ export class S3Provider {
         return await this.s3Client.completeMultipartUpload(params).promise();
     }
 
-    private generateFileName(name: string) {
+    generateFileName(name: string) {
         name = name.replace(/\s/g, '_').trim();
 
         let extension = name.match(/\.[^.]+(\.[^.]+)?$/)?.[0] || '';
