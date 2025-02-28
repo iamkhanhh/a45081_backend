@@ -5,6 +5,8 @@ import { UpdateSampleDto } from './dto/update-sample.dto';
 import { FilterSampleDto } from './dto/filter-sample.dto';
 import { GenerateSinglePresignedUrl } from './dto/generate-single-presigned-url.dto';
 import { PostFileInforDto } from './dto/post-file-infor.dto';
+import { GeneratePresignedUrls } from './dto/generate-presigned-urls.dto';
+import { CompleteUploadDto } from './dto/complete-upload.dto';
 
 @Controller('samples')
 export class SamplesController {
@@ -31,6 +33,30 @@ export class SamplesController {
     @Request() req,
   ) {
     return this.samplesService.generateSinglePresignedUrl(generateSinglePresignedUrl.fileName, req.user.id);
+  }
+
+  @Post('startMultipartUpload')
+  startMultipartUpload(
+    @Body() generateSinglePresignedUrl: GenerateSinglePresignedUrl,
+    @Request() req,
+  ) {
+    return this.samplesService.startMultipartUpload(generateSinglePresignedUrl.fileName, req.user.id);
+  }
+
+  @Post('generatePresignedUrls')
+  generatePresignedUrls(
+    @Body() generatePresignedUrls: GeneratePresignedUrls,
+    @Request() req,
+  ) {
+    return this.samplesService.generatePresignedUrls(generatePresignedUrls, req.user.id);
+  }
+
+  @Post('completeMultipartUpload')
+  completeMultipartUpload(
+    @Body() completeUploadDto: CompleteUploadDto,
+    @Request() req,
+  ) {
+    return this.samplesService.completeMultipartUpload(completeUploadDto, req.user.id);
   }
 
   @Post('postFileInfor')

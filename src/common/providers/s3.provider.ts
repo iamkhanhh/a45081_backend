@@ -47,10 +47,11 @@ export class S3Provider {
         const params: S3.CreateMultipartUploadRequest = {
             Bucket: this.configService.get<string>('AWS_BUCKET'),
             Key: fileName,
+            ContentType: 'text/vcard'
         };
 
         const multipart = await this.s3Client.createMultipartUpload(params).promise();
-        return { uploadId: multipart.UploadId };
+        return multipart.UploadId;
     }
 
     async generatePresignedUrls(fileName: string, uploadId: string, partNumbers: number) {
@@ -63,13 +64,13 @@ export class S3Provider {
                     Key: fileName,
                     PartNumber: partNumber,
                     UploadId: uploadId,
-                    Expires: 60 * 15,
+                    Expires: 60 * 60,
                 };
                 return this.s3Client.getSignedUrlPromise('uploadPart', params);
             }),
         );
 
-        return { presignedUrls };
+        return presignedUrls;
     }
 
     async completeMultipartUpload(fileName: string, uploadId: string, parts: { etag: string }[]) {

@@ -14,6 +14,8 @@ import { SampleStatus } from '@/enums/samples.enum';
 import { UploadStatus } from '@/enums/uploads.enum';
 import { UploadsService } from '../uploads/uploads.service';
 import { PatientsInformationService } from '../patient-information/patient-information.service';
+import { GeneratePresignedUrls } from './dto/generate-presigned-urls.dto';
+import { CompleteUploadDto } from './dto/complete-upload.dto';
 
 @Injectable()
 export class SamplesService {
@@ -105,6 +107,36 @@ export class SamplesService {
         url: await this.s3Provider.generateSinglePresignedUrl(`${this.configService.get('UPLOAD_FOLDER')}/${user_id}/${uploadName}`),
         uploadName
       }
+    }
+  }
+
+  async startMultipartUpload(fileName: string, user_id: number) {
+    let uploadName = this.s3Provider.generateFileName(fileName);
+    return {
+      status: 'success',
+      message: 'Start multipart upload successfully',
+      data: {
+        UploadId: await this.s3Provider.startMultipartUpload(`${this.configService.get('UPLOAD_FOLDER')}/${user_id}/${uploadName}`),
+        uploadName
+      }
+    }
+  }
+
+  async generatePresignedUrls(generatePresignedUrls: GeneratePresignedUrls, user_id: number) {
+    return {
+      status: 'success',
+      message: 'Start multipart upload successfully',
+      data: {
+        urls: await this.s3Provider.generatePresignedUrls(`${this.configService.get('UPLOAD_FOLDER')}/${user_id}/${generatePresignedUrls.fileName}`, generatePresignedUrls.uploadId, generatePresignedUrls.partNumbers),
+      }
+    }
+  }
+
+  async completeMultipartUpload(completeUploadDto: CompleteUploadDto, user_id: number) {
+    return {
+      status: 'success',
+      message: 'Start multipart upload successfully',
+      data: await this.s3Provider.completeMultipartUpload(`${this.configService.get('UPLOAD_FOLDER')}/${user_id}/${completeUploadDto.fileName}`, completeUploadDto.uploadId, completeUploadDto.parts)
     }
   }
 
