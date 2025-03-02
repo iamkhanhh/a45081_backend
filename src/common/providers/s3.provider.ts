@@ -20,12 +20,12 @@ export class S3Provider {
 
     async copyObject(source: string, destination: string) {
         try {
+            process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
             await this.s3Client.copyObject({
                 Key: destination,
                 CopySource: source,
                 Bucket: this.configService.get('AWS_BUCKET')
             }).promise();
-            console.log('Copy successful');
         } catch (error) {
             console.error('S3Provider@copyObject:', error);
             throw error;

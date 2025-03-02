@@ -28,7 +28,6 @@ export class AnalysisService {
   ) { }
 
   async create(createAnalysisDto: CreateAnalysisDto, user_id: number) {
-    console.log(createAnalysisDto);
     const uploads = await this.uploadsService.findUploadsBySampleId(createAnalysisDto.sample_id);
     const newAnalysis = new Analysis();
 
@@ -50,12 +49,12 @@ export class AnalysisService {
     }
 
     const result = await this.analysisRepository.save(newAnalysis);
-    let igv_local_path = `user_files/${user_id}/${result.id}`;
+    let igv_local_path = `${this.configService.get<string>('ANALYSIS_FOLDER')}/${user_id}/${result.id}`;
     await this.analysisRepository.update({ id: result.id }, { igv_local_path, upload_id: uploads[0].id });
 
     for (let e of uploads) {
-      let destination = `${this.configService.get<string>('ANALYSIS_FOLDER')}/${result.user_id}/${result.id}/${e.upload_name}`
-      let source = `${this.configService.get<string>('AWS_BUCKET')}/${this.configService.get<string>('UPLOAD_FOLDER')}/${e.file_path}`
+      let destination = `${this.configService.get<string>('ANALYSIS_FOLDER')}/${result.user_id}/${result.id}/${e.upload_name}`;
+      let source = encodeURIComponent(`${this.configService.get<string>('AWS_BUCKET')}/${e.file_path}`);
 
       await this.s3Provider.copyObject(source, destination);
     }
