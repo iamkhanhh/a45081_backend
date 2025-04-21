@@ -119,8 +119,21 @@ export class AnalysisService {
     };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} analysis`;
+  async findOne(id: number) {
+    const analysis = await this.analysisRepository.findOne({where: {id}});
+    if (!analysis) {
+      throw new BadRequestException('That analysis could not be found')
+    }
+    let sample =  await this.samplesService.findOne(analysis.sample_id);
+
+    return {
+      status: 'success',
+      message: 'got analysis successfully!',
+      data: {
+        ...analysis,
+        sampleName: sample.data.name
+      }
+    };
   }
 
   async getAnalysesByWorkspaceId(workspace_id: number, user_id: number, page: number, pageSize: number, filterAnalysisDto: FilterAnalysisDto) {
@@ -185,8 +198,17 @@ export class AnalysisService {
     return await this.analysisRepository.update({ project_id: workspace_id }, { is_deleted: 1 });
   }
 
-  update(id: number, updateAnalysisDto: UpdateAnalysisDto) {
-    return `This action updates a #${id} analysis`;
+  async update(id: number, updateAnalysisDto: UpdateAnalysisDto) {
+    const analysis = await this.analysisRepository.findOne({where: {id}});
+    if (!analysis) {
+      throw new BadRequestException('That analysis could not be found')
+    }
+    await this.analysisRepository.update({id}, {...updateAnalysisDto});
+
+    return {
+      status: 'success',
+      message: 'Updated successfully!'
+    }
   }
 
   async remove(id: number) {

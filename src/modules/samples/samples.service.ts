@@ -71,8 +71,16 @@ export class SamplesService {
     };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} sample`;
+  async findOne(id: number) {
+    const sample = await this.samplesRepository.findOne({where: {id}});
+    if (!sample) {
+      throw new BadRequestException('That sample could not be found')
+    }
+    return {
+      status: 'success',
+      message: 'got sample successfully!',
+      data: sample
+    };
   }
 
   async getSamplesByPipeLine(id: number) {
