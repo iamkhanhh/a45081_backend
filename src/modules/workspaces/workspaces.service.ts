@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, forwardRef, Inject, Injectable } from '@nestjs/common';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 import { Workspaces } from '@/entities';
@@ -17,6 +17,7 @@ export class WorkspacesService {
   constructor(
     @InjectRepository(Workspaces) private workspacesRepository: Repository<Workspaces>,
     private readonly pipelinesService: PipelinesService,
+    @Inject(forwardRef(() => AnalysisService))
     private readonly analysisService: AnalysisService,
     private readonly paginationProvider: PaginationProvider
   ) {}

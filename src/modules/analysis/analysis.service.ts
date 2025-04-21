@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, forwardRef, Inject, Injectable } from '@nestjs/common';
 import { CreateAnalysisDto } from './dto/create-analysis.dto';
 import { UpdateAnalysisDto } from './dto/update-analysis.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -13,6 +13,7 @@ import { ConfigService } from '@nestjs/config';
 import { S3Provider } from '@/common/providers/s3.provider';
 import { FilterAnalysisDto } from './dto/filter-analysis.dto';
 import { SamplesService } from '../samples/samples.service';
+import { WorkspacesService } from '../workspaces/workspaces.service';
 
 @Injectable()
 export class AnalysisService {
@@ -23,6 +24,8 @@ export class AnalysisService {
     private readonly paginationProvider: PaginationProvider,
     private readonly uploadsService: UploadsService,
     private readonly samplesService: SamplesService,
+    @Inject(forwardRef(() => WorkspacesService))
+    private readonly workspacesService: WorkspacesService,
     private readonly configService: ConfigService,
     private readonly s3Provider: S3Provider
   ) { }
@@ -65,8 +68,55 @@ export class AnalysisService {
     };
   }
 
-  findAll() {
-    return `This action returns all analysis`;
+  async findAll(user_id: number, page: number, pageSize: number, filterAnalysisDto: FilterAnalysisDto) {
+    const filters: any = {
+      user_id: user_id,
+      is_deleted: 0
+    }
+
+    if (filterAnalysisDto.status != '') {
+      const statusMap = {
+        queuing: [AnalysisStatus.QUEUING, AnalysisStatus.FASTQ_QUEUING],
+        analyzing: [AnalysisStatus.ANALYZING, AnalysisStatus.FASTQ_ANALYZING, AnalysisStatus.VEP_ANALYZED, AnalysisStatus.IMPORTING],
+        analyzed: [AnalysisStatus.ANALYZED],
+        error: [AnalysisStatus.ERROR, AnalysisStatus.FASTQ_ERROR]
+      };
+
+      const statuses = statusMap[filterAnalysisDto.status.toLowerCase()];
+      if (statuses) {
+        filters.status = In(statuses);
+      }
+    }
+    if (filterAnalysisDto.assembly != '') {
+      filters.assembly = filterAnalysisDto.assembly
+    }
+    if (filterAnalysisDto.analysisName != '') {
+      filters.name = Like(`%${filterAnalysisDto.analysisName}%`)
+    }
+
+    const results = await this.paginationProvider.paginate(page, pageSize, this.analysisRepository, filters);
+
+    const data = await Promise.all(results.data.map(async (analysis) => {
+      const createdAt = dayjs(analysis.createdAt).format('DD/MM/YYYY');
+      const analyzed = analysis.analyzed ? dayjs(analysis.analyzed).format('DD/MM/YYYY') : '';
+      const workspaceName = await this.workspacesService.getWorkspaceName(analysis.project_id);
+      return {
+        id: analysis.id,
+        name: analysis.name,
+        workspaceName: workspaceName ? workspaceName.data : '', 
+        createdAt: createdAt,
+        analyzed: analyzed,
+        variants: analysis.variants,
+        assembly: analysis.assembly,
+        status: Analysis.getAnalysisStatus(analysis.status),
+      }
+    }));
+
+    return {
+      ...results,
+      data,
+      message: 'List all analyses successfully!'
+    };
   }
 
   findOne(id: number) {
@@ -110,14 +160,16 @@ export class AnalysisService {
       const pipeline_name = await this.pipelinesService.getPipelineNameFromId(analysis.pipeline_id);
       const createdAt = dayjs(analysis.createdAt).format('DD/MM/YYYY');
       const updatedAt = dayjs(analysis.updatedAt).format('DD/MM/YYYY');
+      const analyzed = analysis.analyzed ? dayjs(analysis.analyzed).format('DD/MM/YYYY') : '';
       return {
         id: analysis.id,
         name: analysis.name,
         pipeline_name: pipeline_name,
         createdAt: createdAt,
         updatedAt: updatedAt,
-        analyzed: analysis.analyzed,
+        analyzed: analyzed,
         variants: analysis.variants,
+        assembly: analysis.assembly,
         status: Analysis.getAnalysisStatus(analysis.status),
       }
     }));
