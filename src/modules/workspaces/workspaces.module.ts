@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { WorkspacesService } from './workspaces.service';
 import { WorkspacesController } from './workspaces.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -10,9 +10,10 @@ import { AnalysisModule } from '../analysis/analysis.module';
   imports: [
     TypeOrmModule.forFeature([Workspaces]),
     PipelinesModule,
-    AnalysisModule
+    forwardRef(() => AnalysisModule)
   ],
   controllers: [WorkspacesController],
   providers: [WorkspacesService],
+  exports: [WorkspacesService]
 })
 export class WorkspacesModule {}

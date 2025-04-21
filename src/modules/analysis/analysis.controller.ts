@@ -16,9 +16,14 @@ export class AnalysisController {
     return this.analysisService.create(createAnalysisDto, req.user.id);
   }
 
-  @Get()
-  findAll() {
-    return this.analysisService.findAll();
+  @Post('load-analyses')
+  findAll(
+    @Request() req,
+    @Query('page', ParseIntPipe, new DefaultValuePipe(1)) page: number,
+    @Query('pageSize', ParseIntPipe, new DefaultValuePipe(10)) pageSize: number,
+    @Body() filterAnalysisDto: FilterAnalysisDto
+  ) {
+    return this.analysisService.findAll(req.user.id, page, pageSize, filterAnalysisDto);
   }
 
   @Get(':id')
