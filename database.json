@@ -2,7 +2,7 @@
   "dev": {
     "driver": "mysql",
     "host": "localhost",
-    "port": 3306,
+    "port": 33069,
     "user": "root",
     "password": "khanh123",
     "database": "genetics",

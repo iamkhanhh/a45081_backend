@@ -22,5 +22,13 @@ export class CreateAuthDto {
 
   @IsOptional()
   @IsString()
+  address: string
+
+  @IsOptional()
+  @IsString()
+  institution: string
+
+  @IsOptional()
+  @IsString()
   phone_number: string
 }

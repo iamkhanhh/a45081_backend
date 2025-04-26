@@ -148,7 +148,7 @@ export class UsersService {
   }
 
   async register(createAuthDto: CreateAuthDto) {
-    const { email, password, first_name, last_name, phone_number } = createAuthDto;
+    const { email, password, first_name, last_name, phone_number, address, institution } = createAuthDto;
 
     const isEmailExist = await this.isEMailExist(email);
     if (isEmailExist) {
@@ -162,6 +162,8 @@ export class UsersService {
     newUser.password = hashPassword;
     newUser.first_name = first_name;
     newUser.last_name = last_name;
+    newUser.address = address;
+    newUser.institution = institution;
     newUser.phone_number = phone_number;
     newUser.role = UserRole.USER;
     newUser.status = UserStatus.PENDING;

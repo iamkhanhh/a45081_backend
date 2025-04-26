@@ -29,6 +29,12 @@ export class Users extends AbstractEntity {
   phone_number: string;
 
   @Column()
+  address: string;
+
+  @Column()
+  institution: string;
+
+  @Column()
   codeId: string;
 
   @Column({ type: 'timestamp', nullable: true })
