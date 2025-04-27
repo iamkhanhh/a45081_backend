@@ -7,6 +7,13 @@ import { UpdatePasswordDto } from './dto/update-password.dto';
 export class AccountController {
   constructor(private readonly accountService: AccountService) {}
 
+  @Get('account-statistics')
+  getAccountStatistics(
+    @Request() req,
+  ) {
+    return this.accountService.getAccountStatistics(req.user.id);
+  }
+
   @Get()
   getAccount(
     @Request() req,

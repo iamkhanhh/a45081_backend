@@ -141,6 +141,30 @@ export class AnalysisService {
     return analyses.length;
   }
 
+  async getAnalysesStatistics(user_id: number, lastSixMonthsNumbers: number[]) {
+    let data = [];
+
+    const now = new Date();
+    let currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+
+    for (let month of lastSixMonthsNumbers) {
+
+      let year = month > currentMonth ? currentYear - 1 : currentYear;
+      
+      const results = await this.analysisRepository
+        .createQueryBuilder('analysis')
+        .where('MONTH(analysis.createdAt) = :month', { month })
+        .andWhere('YEAR(analysis.createdAt) = :year', { year })
+        .andWhere('analysis.user_id = :user_id', { user_id })
+        .getMany();
+  
+      data.push(results.length);
+    }
+
+    return data;
+  }
+
   async getAnalysesByWorkspaceId(workspace_id: number, user_id: number, page: number, pageSize: number, filterAnalysisDto: FilterAnalysisDto) {
     const filters: any = {
       project_id: workspace_id,

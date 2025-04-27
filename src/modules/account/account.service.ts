@@ -65,4 +65,41 @@ export class AccountService {
     
     return await this.usersService.updateAccount(id, updateAccountDto);
   }
+
+  async getAccountStatistics(user_id: number) {
+    const lastSixMonthsNumbers = this.getLastSixMonths();
+
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                        
+    const lastSixMonths = lastSixMonthsNumbers.map(month => monthNames[month - 1]);
+    const analysesStatistics = await this.analysisService.getAnalysesStatistics(user_id, lastSixMonthsNumbers);
+    const workspacesStatistics = await this.workspacesService.getWorkspacesStatistics(user_id, lastSixMonthsNumbers);
+
+    return {
+      status: 'success',
+      message: 'Get account statistics successfully',
+      data: {
+        lastSixMonths,
+        analysesStatistics,
+        workspacesStatistics
+      }
+    }
+  }
+  
+  private getLastSixMonths(): number[] {
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1;
+  
+    const lastSixMonths: number[] = [];
+  
+    for (let i = 5; i >= 0; i--) {
+      let month = currentMonth - i;
+      if (month <= 0) {
+        month += 12;
+      }
+      lastSixMonths.push(month);
+    }
+    return lastSixMonths;
+  }  
 }

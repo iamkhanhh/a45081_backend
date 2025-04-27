@@ -98,6 +98,30 @@ export class WorkspacesService {
     return workspaces.length;
   }
 
+  async getWorkspacesStatistics(user_id: number, lastSixMonthsNumbers: number[]) {
+    let data = [];
+
+    const now = new Date();
+    let currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+
+    for (let month of lastSixMonthsNumbers) {
+
+      let year = month > currentMonth ? currentYear - 1 : currentYear;
+      
+      const results = await this.workspacesRepository
+        .createQueryBuilder('workspaces')
+        .where('MONTH(workspaces.createdAt) = :month', { month })
+        .andWhere('YEAR(workspaces.createdAt) = :year', { year })
+        .andWhere('workspaces.user_created_id = :user_id', { user_id })
+        .getMany();
+  
+      data.push(results.length);
+    }
+
+    return data;
+  }
+
   async getWorkspaceName(id: number) {
     const workspace = await this.workspacesRepository.findOne({where: {id}});
     if (!workspace) {
