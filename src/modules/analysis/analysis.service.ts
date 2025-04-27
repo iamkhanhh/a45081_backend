@@ -136,6 +136,11 @@ export class AnalysisService {
     };
   }
 
+  async getTotal(user_id: number) {
+    const analyses = await this.analysisRepository.find({where: {user_id: user_id, is_deleted: 0}});
+    return analyses.length;
+  }
+
   async getAnalysesByWorkspaceId(workspace_id: number, user_id: number, page: number, pageSize: number, filterAnalysisDto: FilterAnalysisDto) {
     const filters: any = {
       project_id: workspace_id,

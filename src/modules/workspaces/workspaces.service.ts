@@ -93,6 +93,11 @@ export class WorkspacesService {
     };
   }
 
+  async getTotal(user_id: number) {
+    const workspaces = await this.workspacesRepository.find({where: {user_created_id: user_id, is_deleted: 0}});
+    return workspaces.length;
+  }
+
   async getWorkspaceName(id: number) {
     const workspace = await this.workspacesRepository.findOne({where: {id}});
     if (!workspace) {
