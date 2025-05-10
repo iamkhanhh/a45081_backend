@@ -18,6 +18,7 @@ import { SamplesModule } from './modules/samples/samples.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { CommonModule } from './common/common.module';
 import { AccountModule } from './modules/account/account.module';
+import { VariantsModule } from './modules/variants/variants.module';
 import environmentValidation from './config/environment.validation';
 
 const ENV = process.env.NODE_ENV || 'development';
@@ -77,7 +78,8 @@ const ENV = process.env.NODE_ENV || 'development';
       inject: [ConfigService],
     }),
     CommonModule,
-    AccountModule
+    AccountModule,
+    VariantsModule
   ],
   controllers: [AppController],
   providers: [
