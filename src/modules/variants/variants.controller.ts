@@ -1,7 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, DefaultValuePipe, Query, Request } from '@nestjs/common';
+import { Controller, Post, Body, Param, ParseIntPipe, DefaultValuePipe, Query } from '@nestjs/common';
 import { VariantsService } from './variants.service';
-import { CreateVariantDto } from './dto/create-variant.dto';
-import { UpdateVariantDto } from './dto/update-variant.dto';
 import { FilterVariantsDto } from './dto/filter-variants.dto';
 
 @Controller('variants')

@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { PaginationProvider } from './providers/pagination.provider';
 import { HashingPasswordProvider } from './providers/hashing-password.provider';
 import { S3Provider } from './providers/s3.provider';
+import { MongodbProvider } from './providers/mongodb.provider';
 
 @Global()
 @Module({
@@ -11,12 +12,14 @@ import { S3Provider } from './providers/s3.provider';
   providers: [
     PaginationProvider,
     HashingPasswordProvider,
-    S3Provider
+    S3Provider,
+    MongodbProvider
   ],
   exports: [
     PaginationProvider,
     HashingPasswordProvider,
-    S3Provider
+    S3Provider,
+    MongodbProvider
   ]
 })
 export class CommonModule {}
