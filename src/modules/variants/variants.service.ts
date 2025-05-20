@@ -5,6 +5,8 @@ import { MongodbProvider } from '@/common/providers/mongodb.provider';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { GeneClinicalSynopsis } from '@/entities';
+import { AnalysisService } from '../analysis/analysis.service';
+import { AddVariantsToReport } from './dto/add-variants-to-report.dto';
 
 @Injectable()
 export class VariantsService {
@@ -13,6 +15,7 @@ export class VariantsService {
     @InjectRepository(GeneClinicalSynopsis) private geneClinicalSynopsisRepository: Repository<GeneClinicalSynopsis>,
     private readonly configService: ConfigService,
     private readonly mongodbProvider: MongodbProvider,
+    private readonly analysisServive: AnalysisService
   ) { }
 
   async findOne(id: number, page: number, pageSize: number, filter: FilterVariantsDto) {
@@ -67,6 +70,110 @@ export class VariantsService {
       pageBegin,
       pageEnd
     };
+  }
+
+  async getVariantsSelected(id: number) {
+    let chrom_pos_ref_alt_arr = [];
+    const temp = await this.analysisServive.findOne(id);
+    if (temp.status != 'success') {
+      throw new BadRequestException('Failed to fetch analysis')
+    }
+    const analysis = temp.data;
+
+    let variantToReport = analysis.variants_to_report ? JSON.parse(analysis.variants_to_report) : [];
+    
+    for (let i in variantToReport) {
+      let chrom_pos_ref_alt_analysis = variantToReport[i].chrom + "_" + variantToReport[i].pos + "_" + variantToReport[i].ref + "_" + variantToReport[i].alt + "_" + variantToReport[i].gene;
+      chrom_pos_ref_alt_arr.push(chrom_pos_ref_alt_analysis);
+    }
+    
+    const db = await this.mongodbProvider.mongodbConnect();
+    const collection = db.collection(`${this.configService.get<string>('MONGO_DB_PREFIX')}_${id}`);
+    if (!collection) {
+      return {
+        status: "error",
+        message: "Collection not found",
+        data: []
+      };
+    }
+
+    let pipeline = [];
+    let matchAnd = [];
+
+    matchAnd.push({ chrom_pos_ref_alt_gene: { $in: chrom_pos_ref_alt_arr } });
+    const match = { $match: { $and: matchAnd } };
+    pipeline.push(match);
+
+    pipeline.push({
+      $project: {
+        _id: "$_id",
+        id: "$chrom_pos_ref_alt_gene",
+        gene: "$gene",
+        transcript_id: "$transcript",
+        position: "$inputPos",
+        chrom: "$chrom",
+        rsid: "$rsId",
+        REF: "$REF",
+        ALT: "$ALT",
+        cnomen: "$cNomen",
+        pnomen: "$pNomen",
+        function: "$codingEffect",
+        location: "$varLocation",
+        coverage: "$coverage",
+        gnomad: "$gnomAD_exome_ALL",
+        cosmicID: "$cosmicIds",
+        classification: "$CLINSIG_FINAL",
+        clinvar: "$Clinvar_VARIANT_ID",
+        gnomAD_AFR: "$gnomAD_exome_AFR",
+        gnomAD_AMR: "$gnomAD_exome_AMR",
+        inheritance: "$inheritance"
+      }
+    });
+
+    const [data] = await Promise.all([
+      collection.aggregate(pipeline, { allowDiskUse: true }).toArray()
+    ]);
+
+    await this.mongodbProvider.mongodbDisconnect();
+
+    return {
+      status: "success",
+      message: "Get selected variants successfully",
+      data
+    }
+  }
+
+  async selectVariantToReport(id: number, body: AddVariantsToReport) {
+    const temp = await this.analysisServive.findOne(id);
+    if (temp.status != 'success') {
+      throw new BadRequestException('Failed to fetch analysis')
+    }
+    const analysis = temp.data;
+    const variants = body.variants;
+
+    let variantToReport = analysis.variants_to_report ? JSON.parse(analysis.variants_to_report) : [];
+    let newVariantToReport = [];
+    for (let i in variants) {
+      let check = true;
+      let chrom_pos_ref_alt = variants[i].chrom + "_" + variants[i].pos + "_" + variants[i].ref + "_" + variants[i].alt + variants[i].gene;
+      for (let j in variantToReport) {
+        let chrom_pos_ref_alt_analysis = variantToReport[j].chrom + "_" + variantToReport[j].pos + "_" + variantToReport[j].ref + "_" + variantToReport[j].alt + variantToReport[j].gene;
+
+        if (chrom_pos_ref_alt == chrom_pos_ref_alt_analysis) {
+          check = false;
+          break;
+        }
+      }
+      if (check) {
+        newVariantToReport.push(variants[i]);
+      }
+    }
+    let arr = newVariantToReport.concat(variantToReport);
+    await this.analysisServive.updateVariantsSelected(id, arr);
+    return {
+      status: "success",
+      message: "Add variants to report successfully"
+    }
   }
 
   private matchFilter(filter: FilterVariantsDto) {

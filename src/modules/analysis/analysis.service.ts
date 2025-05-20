@@ -14,6 +14,7 @@ import { S3Provider } from '@/common/providers/s3.provider';
 import { FilterAnalysisDto } from './dto/filter-analysis.dto';
 import { SamplesService } from '../samples/samples.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
+import { VariantToReportDto } from '../variants/dto/variant-to-report.dto';
 
 @Injectable()
 export class AnalysisService {
@@ -237,6 +238,19 @@ export class AnalysisService {
     return {
       status: 'success',
       message: 'Updated successfully!'
+    }
+  }
+
+  async updateVariantsSelected(id: number, arr: VariantToReportDto[]) {
+    const analysis = await this.analysisRepository.findOne({where: {id}});
+    if (!analysis) {
+      throw new BadRequestException('That analysis could not be found')
+    }
+    await this.analysisRepository.update({ id }, { variants_to_report: JSON.stringify(arr) });
+
+    return {
+      status: 'success',
+      message: 'Updated variants selected successfully!'
     }
   }
 

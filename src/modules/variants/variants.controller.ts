@@ -1,6 +1,7 @@
-import { Controller, Post, Body, Param, ParseIntPipe, DefaultValuePipe, Query } from '@nestjs/common';
+import { Controller, Post, Body, Param, ParseIntPipe, DefaultValuePipe, Query, Get } from '@nestjs/common';
 import { VariantsService } from './variants.service';
 import { FilterVariantsDto } from './dto/filter-variants.dto';
+import { AddVariantsToReport } from './dto/add-variants-to-report.dto';
 
 @Controller('variants')
 export class VariantsController {
@@ -14,5 +15,20 @@ export class VariantsController {
     @Body() filter: FilterVariantsDto
   ) {
     return this.variantsService.findOne(id, page, pageSize, filter);
+  }
+
+  @Get('get-variants-selected/:id')
+  getVariantsSelected(
+    @Param('id', ParseIntPipe) id: number
+  ) {
+    return this.variantsService.getVariantsSelected(id);
+  }
+  
+  @Post('add-to-report/:id')
+  selectVariantToReport(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: AddVariantsToReport
+  ) {
+    return this.variantsService.selectVariantToReport(id, body);
   }
 }
