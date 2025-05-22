@@ -26,6 +26,11 @@ export class AnalysisController {
     return this.analysisService.findAll(req.user.id, page, pageSize, filterAnalysisDto);
   }
 
+  @Get('get-qc-vcf/:id')
+  getQCVCF(@Param('id', ParseIntPipe) id: number) {
+    return this.analysisService.getQCVCF(id);
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.analysisService.findOne(id);

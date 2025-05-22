@@ -240,6 +240,23 @@ export class AnalysisService {
       message: 'Updated successfully!'
     }
   }
+  
+  async getQCVCF(id: number) {
+    const analysis = await this.analysisRepository.findOne({where: {id}});
+    if (!analysis) {
+      throw new BadRequestException('That analysis could not be found')
+    }
+
+    let file_path = 'http://s3.amazonaws.com/vcf.files/ExAC.r0.2.sites.vep.vcf.gz'
+    let tbi_path = ''
+    let genome_build = analysis.assembly == 'hg19' ? 'GRCh37' : 'GRCh38'
+
+    return {
+      status: "success",
+      message: "Get QC URL successfully",
+      data: `${this.configService.get<string>('VCF_IOBIO_HOST')}/?species=Human&build=${genome_build}&vcf=${file_path}&tbi=${tbi_path}`
+    }
+  }
 
   async updateVariantsSelected(id: number, arr: VariantToReportDto[]) {
     const analysis = await this.analysisRepository.findOne({where: {id}});
