@@ -1,7 +1,8 @@
-import { Controller, Post, Body, Param, ParseIntPipe, DefaultValuePipe, Query, Get } from '@nestjs/common';
+import { Controller, Post, Body, Param, ParseIntPipe, DefaultValuePipe, Query, Get, Delete } from '@nestjs/common';
 import { VariantsService } from './variants.service';
 import { FilterVariantsDto } from './dto/filter-variants.dto';
 import { AddVariantsToReport } from './dto/add-variants-to-report.dto';
+import { VariantToReportDto } from './dto/variant-to-report.dto';
 
 @Controller('variants')
 export class VariantsController {
@@ -22,6 +23,14 @@ export class VariantsController {
     @Param('id', ParseIntPipe) id: number
   ) {
     return this.variantsService.getVariantsSelected(id);
+  }
+
+  @Delete(':id/delete-selected-variant')
+  deleteSelectedVariant(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() variant: VariantToReportDto
+  ) {
+    return this.variantsService.deleteSelectedVariant(id, variant);
   }
   
   @Post('add-to-report/:id')

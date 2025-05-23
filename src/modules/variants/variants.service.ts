@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { GeneClinicalSynopsis } from '@/entities';
 import { AnalysisService } from '../analysis/analysis.service';
 import { AddVariantsToReport } from './dto/add-variants-to-report.dto';
+import { VariantToReportDto } from './dto/variant-to-report.dto';
 
 @Injectable()
 export class VariantsService {
@@ -81,12 +82,12 @@ export class VariantsService {
     const analysis = temp.data;
 
     let variantToReport = analysis.variants_to_report ? JSON.parse(analysis.variants_to_report) : [];
-    
+
     for (let i in variantToReport) {
       let chrom_pos_ref_alt_analysis = variantToReport[i].chrom + "_" + variantToReport[i].pos + "_" + variantToReport[i].ref + "_" + variantToReport[i].alt + "_" + variantToReport[i].gene;
       chrom_pos_ref_alt_arr.push(chrom_pos_ref_alt_analysis);
     }
-    
+
     const db = await this.mongodbProvider.mongodbConnect();
     const collection = db.collection(`${this.configService.get<string>('MONGO_DB_PREFIX')}_${id}`);
     if (!collection) {
@@ -332,6 +333,37 @@ export class VariantsService {
     } catch (error) {
       console.log('VariantsService@getOmimDiseaseForGeneName:', error);
       throw new BadRequestException('Unable to connect to the database, please try again later!');
+    }
+  }
+
+  async deleteSelectedVariant(id: number, variant: VariantToReportDto) {
+    try {
+      const temp = await this.analysisServive.findOne(id);
+      if (temp.status != 'success') {
+        throw new BadRequestException('Failed to fetch analysis')
+      }
+      const analysis = temp.data;
+      let variantToDelete = variant.chrom + "_" + variant.pos + "_" + variant.ref + "_" + variant.alt + variant.gene
+      let variants = analysis.variants_to_report ? JSON.parse(analysis.variants_to_report) : [];
+
+      let newVariantToReport = [];
+      for (let i in variants) {
+        let chrom_pos_ref_alt = variants[i].chrom + "_" + variants[i].pos + "_" + variants[i].ref + "_" + variants[i].alt + variants[i].gene;
+        
+        if (chrom_pos_ref_alt != variantToDelete) {
+          newVariantToReport.push(variants[i]);
+        }
+      }
+
+      await this.analysisServive.updateVariantsSelected(id, newVariantToReport);
+
+      return {
+        status: "success",
+        message: "Delete selected variant successfully"
+      };
+    } catch (error) {
+      console.log('VariantsService@deleteSelectedVariant:', error);
+      throw new BadRequestException('Error!');
     }
   }
 }
