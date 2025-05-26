@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { IsDate, IsNumber, IsString } from "class-validator";
+import { IsDate, IsNumber, IsOptional, IsString } from "class-validator";
 
 export class CreatePatientInformationDto {
     @IsString()
@@ -17,4 +17,16 @@ export class CreatePatientInformationDto {
 
     @IsNumber()
     sample_id: number;
+
+    @IsString()
+    @IsOptional()
+    gender: string;
+
+    @IsString()
+    @IsOptional()
+    ethnicity: string;
+
+    @IsString()
+    @IsOptional()
+    sample_type: string;
 }

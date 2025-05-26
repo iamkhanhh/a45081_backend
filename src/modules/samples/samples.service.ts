@@ -188,7 +188,10 @@ export class SamplesService {
       last_name: postFileInforDto.last_name,
       dob: postFileInforDto.dob,
       phenotype: postFileInforDto.phenotype,
-      sample_id: sample.id
+      sample_id: sample.id,
+      gender: '',
+      ethnicity: '',
+      sample_type: '',
     }
     const patient = await this.patientsInformationService.create(patientInfor);
     if (!patient) {
