@@ -72,10 +72,6 @@ export class Analysis extends AbstractEntity{
   @Column()
   assembly: string;
 
-  // static getMongoCollectionName(analysisId: number): {
-	// 	return process.env.MONGO_ANALYSIS_PREFIX + analysisId
-	// }
-
   static getAnalysisStatus(status): string {
 		switch(status) {
 			case AnalysisStatus.QUEUING: 
