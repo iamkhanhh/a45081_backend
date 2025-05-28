@@ -15,12 +15,15 @@ import { FilterAnalysisDto } from './dto/filter-analysis.dto';
 import { SamplesService } from '../samples/samples.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 import { VariantToReportDto } from '../variants/dto/variant-to-report.dto';
+import { Genes } from '@/entities/genes.entity';
+import { GetGeneDetailDto } from './dto/get-gene-detail.dto';
 
 @Injectable()
 export class AnalysisService {
 
   constructor(
     @InjectRepository(Analysis) private analysisRepository: Repository<Analysis>,
+    @InjectRepository(Genes) private genesRepository: Repository<Genes>,
     private readonly pipelinesService: PipelinesService,
     private readonly paginationProvider: PaginationProvider,
     private readonly uploadsService: UploadsService,
@@ -104,7 +107,7 @@ export class AnalysisService {
       return {
         id: analysis.id,
         name: analysis.name,
-        workspaceName: workspaceName ? workspaceName.data : '', 
+        workspaceName: workspaceName ? workspaceName.data : '',
         createdAt: createdAt,
         analyzed: analyzed,
         variants: analysis.variants,
@@ -121,11 +124,11 @@ export class AnalysisService {
   }
 
   async findOne(id: number) {
-    const analysis = await this.analysisRepository.findOne({where: {id}});
+    const analysis = await this.analysisRepository.findOne({ where: { id } });
     if (!analysis) {
       throw new BadRequestException('That analysis could not be found')
     }
-    let sample =  await this.samplesService.findOne(analysis.sample_id);
+    let sample = await this.samplesService.findOne(analysis.sample_id);
 
     return {
       status: 'success',
@@ -138,7 +141,7 @@ export class AnalysisService {
   }
 
   async getTotal(user_id: number) {
-    const analyses = await this.analysisRepository.find({where: {user_id: user_id, is_deleted: 0}});
+    const analyses = await this.analysisRepository.find({ where: { user_id: user_id, is_deleted: 0 } });
     return analyses.length;
   }
 
@@ -152,18 +155,40 @@ export class AnalysisService {
     for (let month of lastSixMonthsNumbers) {
 
       let year = month > currentMonth ? currentYear - 1 : currentYear;
-      
+
       const results = await this.analysisRepository
         .createQueryBuilder('analysis')
         .where('MONTH(analysis.createdAt) = :month', { month })
         .andWhere('YEAR(analysis.createdAt) = :year', { year })
         .andWhere('analysis.user_id = :user_id', { user_id })
         .getMany();
-  
+
       data.push(results.length);
     }
 
     return data;
+  }
+
+  async getGeneDetail(getGeneDetailDto: GetGeneDetailDto) {
+    try {
+      const gene = await this.genesRepository.findOne({ where: { name: getGeneDetailDto.geneName } });
+
+      let geneInfo = {
+        synonyms: gene.name,
+        full_name: gene ? gene.full_name : "",
+        function: gene ? gene.summary : ""
+      }
+
+      return {
+        status: "success",
+        message: "Get gene detail successfully",
+        data: geneInfo
+      }
+    } catch (error) {
+      console.log('AnalysisService@getGeneDetail: ', error);
+
+      return { status: "error" }
+    }
   }
 
   async getAnalysesByWorkspaceId(workspace_id: number, user_id: number, page: number, pageSize: number, filterAnalysisDto: FilterAnalysisDto) {
@@ -229,20 +254,20 @@ export class AnalysisService {
   }
 
   async update(id: number, updateAnalysisDto: UpdateAnalysisDto) {
-    const analysis = await this.analysisRepository.findOne({where: {id}});
+    const analysis = await this.analysisRepository.findOne({ where: { id } });
     if (!analysis) {
       throw new BadRequestException('That analysis could not be found')
     }
-    await this.analysisRepository.update({id}, {...updateAnalysisDto});
+    await this.analysisRepository.update({ id }, { ...updateAnalysisDto });
 
     return {
       status: 'success',
       message: 'Updated successfully!'
     }
   }
-  
+
   async getQCVCF(id: number) {
-    const analysis = await this.analysisRepository.findOne({where: {id}});
+    const analysis = await this.analysisRepository.findOne({ where: { id } });
     if (!analysis) {
       throw new BadRequestException('That analysis could not be found')
     }
@@ -259,7 +284,7 @@ export class AnalysisService {
   }
 
   async updateVariantsSelected(id: number, arr: VariantToReportDto[]) {
-    const analysis = await this.analysisRepository.findOne({where: {id}});
+    const analysis = await this.analysisRepository.findOne({ where: { id } });
     if (!analysis) {
       throw new BadRequestException('That analysis could not be found')
     }

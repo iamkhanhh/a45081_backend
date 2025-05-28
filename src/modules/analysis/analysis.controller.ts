@@ -3,6 +3,7 @@ import { AnalysisService } from './analysis.service';
 import { CreateAnalysisDto } from './dto/create-analysis.dto';
 import { UpdateAnalysisDto } from './dto/update-analysis.dto';
 import { FilterAnalysisDto } from './dto/filter-analysis.dto';
+import { GetGeneDetailDto } from './dto/get-gene-detail.dto';
 
 @Controller('analysis')
 export class AnalysisController {
@@ -29,6 +30,11 @@ export class AnalysisController {
   @Get('get-qc-vcf/:id')
   getQCVCF(@Param('id', ParseIntPipe) id: number) {
     return this.analysisService.getQCVCF(id);
+  }
+
+  @Post('get-gene-detail')
+  getGeneDetail(@Body() getGeneDetailDto: GetGeneDetailDto) {
+    return this.analysisService.getGeneDetail(getGeneDetailDto);
   }
 
   @Get(':id')
