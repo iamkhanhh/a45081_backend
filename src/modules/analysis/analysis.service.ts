@@ -307,4 +307,45 @@ export class AnalysisService {
       message: 'Deleted successfully!'
     };
   }
+
+  async getPendingAnalysis(assembly: string) {
+    let data: any = null;
+    const analyses = await this.analysisRepository.find({
+      where: {
+        status: AnalysisStatus.QUEUING,
+        is_deleted: 0,
+        assembly: assembly
+      },
+      order: {
+        createdAt: 'ASC'
+      },
+    })
+    if (analyses.length === 0) {
+      return data
+    }
+
+    data = analyses[0];
+    const uploads = await this.uploadsService.findUploadsBySampleId(data.sample_id);
+    data.upload = uploads[0];
+    return data;
+  }
+
+  async updateAnalysisStatus(analysisId: number, status: AnalysisStatus) {
+    const analysis = await this.analysisRepository.findOne({ where: { id: analysisId } });
+    if (!analysis) {
+      throw new BadRequestException('That analysis could not be found');
+    }
+
+    if (status === AnalysisStatus.ANALYZED) {
+      analysis.analyzed = new Date();
+    }
+
+    analysis.status = status;
+    await this.analysisRepository.save(analysis);
+
+    return {
+      status: 'success',
+      message: 'Analysis status updated successfully'
+    };
+  }
 }

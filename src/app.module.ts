@@ -21,6 +21,7 @@ import { AccountModule } from './modules/account/account.module';
 import { VariantsModule } from './modules/variants/variants.module';
 import environmentValidation from './config/environment.validation';
 import { ScheduleModule } from '@nestjs/schedule';
+import { VepModule } from './modules/vep/vep.module';
 
 const ENV = process.env.NODE_ENV || 'development';
 
@@ -81,7 +82,8 @@ const ENV = process.env.NODE_ENV || 'development';
     CommonModule,
     AccountModule,
     VariantsModule,
-    ScheduleModule.forRoot()
+    ScheduleModule.forRoot(),
+    VepModule
   ],
   controllers: [AppController],
   providers: [
