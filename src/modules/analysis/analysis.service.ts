@@ -327,6 +327,10 @@ export class AnalysisService {
     data = analyses[0];
     const uploads = await this.uploadsService.findUploadsBySampleId(data.sample_id);
     data.upload = uploads[0];
+
+    let destination = `${this.configService.get<string>('ANALYSIS_FOLDER')}/${data.user_id}/${data.id}/analysis.anno`;
+    await this.analysisRepository.update({ id: analyses[0].id }, { file_path: destination, status: AnalysisStatus.ANALYZING });
+
     return data;
   }
 
