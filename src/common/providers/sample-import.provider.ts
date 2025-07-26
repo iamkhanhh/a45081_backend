@@ -7,6 +7,7 @@ import { MongodbProvider } from './mongodb.provider';
 import { AnalysisStatus } from '@/enums';
 import { CommonProvider } from './common.provider';
 import { ConfigService } from '@nestjs/config';
+import * as path from 'path';
 
 @Injectable()
 export class SampleImportProvider {
@@ -19,16 +20,16 @@ export class SampleImportProvider {
         private readonly configService: ConfigService
     ) { }
 
-    // @Cron(CronExpression.EVERY_30_SECONDS)
+    @Cron(CronExpression.EVERY_30_SECONDS)
     async checkAnalyzed() {
         let analysisImporting = await this.getAnalysisByStatus(AnalysisStatus.IMPORTING);
         if (analysisImporting) {
-            return this.logger.log('Analysis is already importing');
+            return
         }
 
         let analysis = await this.getAnalysisByStatus(AnalysisStatus.VEP_ANALYZED);
         if (!analysis) {
-            return this.logger.log('No queued analysis');
+            return
         }
 
         this.logger.log(`Importing analysis with ID: ${analysis.id}`);
@@ -47,23 +48,30 @@ export class SampleImportProvider {
 
     async import(analysis: Analysis): Promise<boolean> {
         try {
-            this.logger.log(`Starting import for analysis ID: ${analysis.id}`);
             let collectionName = this.commonProvider.getMongoCollectionName(analysis.id);
 
-            let file_path = `${this.configService.get<string>('MOUNT_FOLDER')}/${analysis.file_path}`
+            let file_path = `${this.configService.get<string>('MOUNT_FOLDER')}/${analysis.file_path}`;
+            let file_path_import = `${this.configService.get<string>('MONGO_MOUNT_FOLDER')}/genetics/${analysis.file_path}`;
+            let dir_path_import = path.dirname(file_path_import);
+
+            await this.commonProvider.runCommand(`mkdir -p "${dir_path_import}" && cp ${file_path} ${file_path_import}`);
+            
             let options = [
-                `--host ${this.configService.get<string>('MONGO_DB_HOST')} --port ${this.configService.get<string>('MONGO_DB_PORT')}`,
+                `--host ${this.configService.get<string>('MONGO_DB_HOST')} --port 27017`,
                 `--collection ${collectionName}`,
                 `--db ${this.configService.get<string>('MONGO_DB_DATABASE')}`,
                 `--type tsv`,
                 `--headerline`,
-                `--file ${file_path}`,
+                `--file /data/db/genetics/${analysis.file_path}`,
                 `--drop`
-            ]
+            ];
 
-            let command = `${this.configService.get<string>('MONGO_IMPORT_CMD')} ${options.join(' ')}`
+            let command = `${this.configService.get<string>('MONGO_IMPORT_CMD')} ${options.join(' ')}`;
 
             await this.commonProvider.runCommand(command);
+
+            await this.commonProvider.runCommand(`rm -rf ${this.configService.get<string>('MONGO_MOUNT_FOLDER')}/genetics`);
+
             return true
         } catch (error) {
             this.logger.error(error);
@@ -73,26 +81,31 @@ export class SampleImportProvider {
     }
 
     async onImportSuccess(analysis: Analysis) {
-        const db = await this.mongodbProvider.mongodbConnect();
-        let collectionName = this.commonProvider.getMongoCollectionName(analysis.id);
-        const collection = db.collection(collectionName);
-        if (!collection) {
-            this.logger.error(`Collection ${collectionName} not found for analysis ID: ${analysis.id}`);
-            return this.onImportError(analysis);
+        try {
+            const db = await this.mongodbProvider.mongodbConnect();
+            let collectionName = this.commonProvider.getMongoCollectionName(analysis.id);
+            const collection = db.collection(collectionName);
+            if (!collection) {
+                this.logger.error(`Collection ${collectionName} not found for analysis ID: ${analysis.id}`);
+                return this.onImportError(analysis);
+            }
+    
+            let pipeCount = [];
+            pipeCount.push({ $group: { _id: null, count: { $sum: 1 } } });
+    
+            const [count] = await Promise.all([
+                collection.aggregate(pipeCount, { allowDiskUse: true }).toArray()
+            ]);
+    
+            await this.mongodbProvider.mongodbDisconnect();
+    
+            let variants = count[0]?.count || 0;
+            this.logger.log(`Found ${variants} variants for analysis ID: ${analysis.id}`);
+            return await this.analysisRepository.update({ id: analysis.id }, { status: AnalysisStatus.ANALYZED, analyzed: new Date(), variants: variants });
+        } catch (error) {
+            this.logger.error(error);
+            return console.log('SampleImportProvider@import', error);
         }
-
-        let pipeCount = [];
-        pipeCount.push({ $group: { _id: null, count: { $sum: 1 } } });
-
-        const [count] = await Promise.all([
-            collection.aggregate(pipeCount, { allowDiskUse: true }).toArray()
-        ]);
-
-        await this.mongodbProvider.mongodbDisconnect();
-
-        let variants = count[0]?.count || 0;
-        this.logger.log(`Found ${variants} variants for analysis ID: ${analysis.id}`);
-        return await this.analysisRepository.update({ id: analysis.id }, { status: AnalysisStatus.ANALYZED, analyzed: new Date(), variants: variants });
     }
 
     async onImportError(analysis: Analysis) {
@@ -102,7 +115,8 @@ export class SampleImportProvider {
     private async getAnalysisByStatus(status: AnalysisStatus) {
         return await this.analysisRepository.findOne({
             where: {
-                status: status
+                status: status,
+                is_deleted: 0
             }
         })
     }

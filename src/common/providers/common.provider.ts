@@ -11,7 +11,7 @@ export class CommonProvider {
     ) { }
 
     getMongoCollectionName(analysisId: number) {
-        return `${this.configService.get<string>('MONGO_COLLECTION_PREFIX')}_${analysisId}`;
+        return `${this.configService.get<string>('MONGO_DB_PREFIX')}_${analysisId}`;
     }
 
     async runCommand(command: string): Promise<string> {

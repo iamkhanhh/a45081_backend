@@ -16,6 +16,7 @@ export default Joi.object({
     MONGO_DB_PORT: Joi.number().port().default(28000).required(),
     MONGO_DB_DATABASE: Joi.string().required(),
     MONGO_IMPORT_CMD: Joi.string().required(),
+    MONGO_MOUNT_FOLDER: Joi.string().required(),
     JWT_SECRET: Joi.string().required(),
     JWT_ACCESS_TOKEN_EXPIRED: Joi.string().required(),
     MAIL_USER: Joi.string().required(),
