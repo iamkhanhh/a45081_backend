@@ -7,6 +7,7 @@ import { SampleImportProvider } from './providers/sample-import.provider';
 import { Analysis } from '@/entities';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CommonProvider } from './providers/common.provider';
+import { AnalysisGateway } from './gateways/analysis.gateway';
 
 @Global()
 @Module({
@@ -19,14 +20,16 @@ import { CommonProvider } from './providers/common.provider';
     S3Provider,
     MongodbProvider,
     SampleImportProvider,
-    CommonProvider
+    CommonProvider,
+    AnalysisGateway
   ],
   exports: [
     PaginationProvider,
     HashingPasswordProvider,
     S3Provider,
     MongodbProvider,
-    CommonProvider
+    CommonProvider,
+    AnalysisGateway
   ]
 })
 export class CommonModule {}

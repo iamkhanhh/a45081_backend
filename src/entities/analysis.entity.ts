@@ -82,13 +82,14 @@ export class Analysis extends AbstractEntity{
         return 'FASTQ Analyzing'
 			case AnalysisStatus.ANALYZING:
 			case AnalysisStatus.VEP_ANALYZED:
-			case AnalysisStatus.IMPORTING:
 				return 'VCF Analyzing'
 			case AnalysisStatus.ANALYZED:
 				return 'Analyzed'
 			case AnalysisStatus.ERROR:
 			case AnalysisStatus.FASTQ_ERROR:
 				return 'Error';
+      case AnalysisStatus.IMPORTING:
+        return 'Importing';
 			default:
 				return 'Error'
 		}

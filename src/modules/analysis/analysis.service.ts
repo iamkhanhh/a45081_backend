@@ -17,6 +17,7 @@ import { WorkspacesService } from '../workspaces/workspaces.service';
 import { VariantToReportDto } from '../variants/dto/variant-to-report.dto';
 import { Genes } from '@/entities/genes.entity';
 import { GetGeneDetailDto } from './dto/get-gene-detail.dto';
+import { AnalysisGateway } from '@/common/gateways/analysis.gateway';
 
 @Injectable()
 export class AnalysisService {
@@ -31,7 +32,8 @@ export class AnalysisService {
     @Inject(forwardRef(() => WorkspacesService))
     private readonly workspacesService: WorkspacesService,
     private readonly configService: ConfigService,
-    private readonly s3Provider: S3Provider
+    private readonly s3Provider: S3Provider,
+    private readonly analysisGateway: AnalysisGateway
   ) { }
 
   async create(createAnalysisDto: CreateAnalysisDto, user_id: number) {
@@ -346,6 +348,12 @@ export class AnalysisService {
 
     analysis.status = status;
     await this.analysisRepository.save(analysis);
+
+    this.analysisGateway.sendSampleStatusUpdate({
+      id: analysis.id,
+      status: Analysis.getAnalysisStatus(analysis.status),
+      analyzed: analysis.analyzed ? dayjs(analysis.analyzed).format('DD/MM/YYYY') : ''
+    });
 
     return {
       status: 'success',
