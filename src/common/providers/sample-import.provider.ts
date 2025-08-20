@@ -8,6 +8,8 @@ import { AnalysisStatus } from '@/enums';
 import { CommonProvider } from './common.provider';
 import { ConfigService } from '@nestjs/config';
 import * as path from 'path';
+import * as dayjs from 'dayjs'
+import { AnalysisGateway } from '../gateways/analysis.gateway';
 
 @Injectable()
 export class SampleImportProvider {
@@ -17,7 +19,8 @@ export class SampleImportProvider {
         @InjectRepository(Analysis) private analysisRepository: Repository<Analysis>,
         private readonly mongodbProvider: MongodbProvider,
         private readonly commonProvider: CommonProvider,
-        private readonly configService: ConfigService
+        private readonly configService: ConfigService,
+        private readonly analysisGateway: AnalysisGateway
     ) { }
 
     @Cron(CronExpression.EVERY_30_SECONDS)
@@ -34,6 +37,10 @@ export class SampleImportProvider {
 
         this.logger.log(`Importing analysis with ID: ${analysis.id}`);
         await this.analysisRepository.update({ id: analysis.id }, { status: AnalysisStatus.IMPORTING });
+        this.analysisGateway.sendAnalysisStatusUpdate({
+            id: analysis.id,
+            status: Analysis.getAnalysisStatus(AnalysisStatus.IMPORTING),
+        });
 
         let importCheck = await this.import(analysis);
 
@@ -101,7 +108,15 @@ export class SampleImportProvider {
     
             let variants = count[0]?.count || 0;
             this.logger.log(`Found ${variants} variants for analysis ID: ${analysis.id}`);
-            return await this.analysisRepository.update({ id: analysis.id }, { status: AnalysisStatus.ANALYZED, analyzed: new Date(), variants: variants });
+
+            let analyzed_time = new Date();
+            await this.analysisRepository.update({ id: analysis.id }, { status: AnalysisStatus.ANALYZED, analyzed: analyzed_time, variants: variants });
+            return this.analysisGateway.sendAnalysisStatusUpdate({
+                id: analysis.id,
+                status: Analysis.getAnalysisStatus(AnalysisStatus.ANALYZED),
+                analyzed: analyzed_time ? dayjs(analyzed_time).format('DD/MM/YYYY') : '',
+                variants: variants
+            });
         } catch (error) {
             this.logger.error(error);
             return console.log('SampleImportProvider@import', error);

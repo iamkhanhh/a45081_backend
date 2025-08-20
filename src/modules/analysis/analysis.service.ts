@@ -331,7 +331,7 @@ export class AnalysisService {
     data.upload = uploads[0];
 
     let destination = `${this.configService.get<string>('ANALYSIS_FOLDER')}/${data.user_id}/${data.id}/analysis.anno`;
-    await this.analysisRepository.update({ id: analyses[0].id }, { file_path: destination, status: AnalysisStatus.ANALYZING });
+    await this.analysisRepository.update({ id: analyses[0].id }, { file_path: destination });
 
     return data;
   }
@@ -349,10 +349,9 @@ export class AnalysisService {
     analysis.status = status;
     await this.analysisRepository.save(analysis);
 
-    this.analysisGateway.sendSampleStatusUpdate({
+    this.analysisGateway.sendAnalysisStatusUpdate({
       id: analysis.id,
-      status: Analysis.getAnalysisStatus(analysis.status),
-      analyzed: analysis.analyzed ? dayjs(analysis.analyzed).format('DD/MM/YYYY') : ''
+      status: Analysis.getAnalysisStatus(analysis.status)
     });
 
     return {
