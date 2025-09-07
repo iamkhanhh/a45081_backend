@@ -1,5 +1,5 @@
 import { UploadStatus } from "@/enums/uploads.enum";
-import { IsEnum, IsNumber, IsString } from "class-validator";
+import { IsEnum, IsNumber, IsOptional, IsString } from "class-validator";
 
 export class CreateUploadForSample {
     @IsString()
@@ -12,15 +12,19 @@ export class CreateUploadForSample {
     file_type: string;
 
     @IsString()
+    @IsOptional()
     upload_name: string;
 
     @IsNumber()
+    @IsOptional()
     user_created: number;
 
     @IsString()
+    @IsOptional()
     file_path: string;
 
     @IsEnum(UploadStatus)
     @IsNumber()
+    @IsOptional()
     upload_status: number
 }

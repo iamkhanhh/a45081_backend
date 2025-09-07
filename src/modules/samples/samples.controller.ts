@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, DefaultValuePipe, Query, Request } from '@nestjs/common';
 import { SamplesService } from './samples.service';
-import { CreateSampleDto } from './dto/create-sample.dto';
+import { CreateSampleFastQDto } from './dto/create-sample-fastq.dto';
 import { UpdateSampleDto } from './dto/update-sample.dto';
 import { FilterSampleDto } from './dto/filter-sample.dto';
 import { GenerateSinglePresignedUrl } from './dto/generate-single-presigned-url.dto';
@@ -13,8 +13,16 @@ export class SamplesController {
   constructor(private readonly samplesService: SamplesService) {}
 
   @Post()
-  create(@Body() createSampleDto: CreateSampleDto) {
-    return this.samplesService.create(createSampleDto);
+  create(@Body() createSampleFastQDto: CreateSampleFastQDto) {
+    return this.samplesService.create(createSampleFastQDto);
+  }
+
+  @Post('fastq')
+  createSampleFastQ(
+    @Body() body: CreateSampleFastQDto[],
+    @Request() req,
+  ) {
+    return this.samplesService.createSampleFastQ(body, req.user.id);
   }
 
   @Post('load-samples')

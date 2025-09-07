@@ -1,15 +1,18 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Request } from '@nestjs/common';
 import { UploadsService } from './uploads.service';
-import { CreateUploadDto } from './dto/create-upload.dto';
 import { UpdateUploadDto } from './dto/update-upload.dto';
+import { CreateUploadForSample } from './dto/create-upload-for-sample.dto';
 
 @Controller('uploads')
 export class UploadsController {
   constructor(private readonly uploadsService: UploadsService) {}
 
-  @Post()
-  create(@Body() createUploadDto: CreateUploadDto) {
-    return this.uploadsService.create(createUploadDto);
+  @Post('fastq')
+  create(
+    @Body() createUploadDto: CreateUploadForSample,
+    @Request() req,
+  ) {
+    return this.uploadsService.createUploadFastQ(createUploadDto, req.user.id);
   }
 
   @Get()
@@ -22,7 +25,7 @@ export class UploadsController {
     return this.uploadsService.findOne(id);
   }
 
-  @Patch(':id')
+  @Patch('fastq/:id')
   update(@Param('id', ParseIntPipe) id: number, @Body() updateUploadDto: UpdateUploadDto) {
     return this.uploadsService.update(id, updateUploadDto);
   }

@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateUploadDto } from './dto/create-upload.dto';
 import { UpdateUploadDto } from './dto/update-upload.dto';
 import { Uploads } from '@/entities';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateUploadForSample } from './dto/create-upload-for-sample.dto';
+import { UploadStatus } from '@/enums/uploads.enum';
 
 @Injectable()
 export class UploadsService {
@@ -13,8 +14,24 @@ export class UploadsService {
     @InjectRepository(Uploads) private uploadsRepository: Repository<Uploads>,
   ) { }
 
-  create(createUploadDto: CreateUploadDto) {
-    return 'This action adds a new upload';
+  async createUploadFastQ(createUploadDto: CreateUploadForSample, user_id: number) {
+    let uploadInfor = {
+      original_name: createUploadDto.original_name,
+      file_size: createUploadDto.file_size,
+      file_type: createUploadDto.file_type,
+      user_created: user_id,
+      is_deleted: 0,
+      upload_status: UploadStatus.UPLOADING
+    }
+    const upload = await this.uploadsRepository.save(uploadInfor);
+    if (!upload) {
+      throw new BadRequestException('There was an error creating the upload information!');
+    }
+    return {
+      status: 'success',
+      message: 'Create upload record for fastq sample successfully',
+      uploadId: upload.id
+    }
   }
 
   findAll() {
@@ -25,8 +42,20 @@ export class UploadsService {
     return `This action returns a #${id} upload`;
   }
 
-  update(id: number, updateUploadDto: UpdateUploadDto) {
-    return `This action updates a #${id} upload`;
+  async update(id: number, updateUploadDto: UpdateUploadDto) {
+    try {
+      await this.uploadsRepository.update({id: id}, {...updateUploadDto});
+      return {
+        status: 'success',
+        message: 'Update upload record successfully'
+      }
+    } catch (error) {
+      console.log('err: ', error);
+      return {
+        status: 'error',
+        message: 'Update upload record failed'
+      }
+    }
   }
 
   remove(id: number) {
