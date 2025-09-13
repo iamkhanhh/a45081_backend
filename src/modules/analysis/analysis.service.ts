@@ -336,6 +336,37 @@ export class AnalysisService {
     return data;
   }
 
+  async getPendingFastqAnalysis() {
+    let data: any = null;
+    const analyses = await this.analysisRepository.find({
+      where: {
+        status: AnalysisStatus.FASTQ_QUEUING,
+        is_deleted: 0
+      },
+      order: {
+        createdAt: 'ASC'
+      },
+    })
+    if (analyses.length === 0) {
+      return data
+    }
+
+    data = analyses[0];
+    const uploads = await this.uploadsService.findUploadsBySampleId(data.sample_id);
+    for (let e of uploads) {
+      if (e.fastq_pair_index == 1) {
+        data.fastq1 = e;
+      } else if (e.fastq_pair_index == 2) {
+        data.fastq2 = e;
+      }
+    }
+
+    // let destination = `${this.configService.get<string>('ANALYSIS_FOLDER')}/${data.user_id}/${data.id}/analysis.anno`;
+    // await this.analysisRepository.update({ id: analyses[0].id }, { file_path: destination });
+
+    return data;
+  }
+
   async updateAnalysisStatus(analysisId: number, status: AnalysisStatus) {
     const analysis = await this.analysisRepository.findOne({ where: { id: analysisId } });
     if (!analysis) {

@@ -6,6 +6,7 @@ export default Joi.object({
         .default('development'),
     VCF_IOBIO_HOST: Joi.string().required(),
     VEP_TOKEN: Joi.string().required(),
+    FASTQ_TOKEN: Joi.string().required(),
     DB_PORT: Joi.number().port().default(3306),
     DB_PASSWORD: Joi.string().required(),
     DB_HOST: Joi.string().required(),
