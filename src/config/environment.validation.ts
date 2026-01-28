@@ -5,6 +5,7 @@ export default Joi.object({
         .valid('development', 'production', 'test', 'provision')
         .default('development'),
     VCF_IOBIO_HOST: Joi.string().required(),
+    ALLOWED_ORIGINS: Joi.string().default('http://localhost:4200'),
     VEP_TOKEN: Joi.string().required(),
     FASTQ_TOKEN: Joi.string().required(),
     DB_PORT: Joi.number().port().default(3306),

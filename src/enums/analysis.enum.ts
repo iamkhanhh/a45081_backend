@@ -9,3 +9,8 @@ export enum AnalysisStatus {
     FASTQ_ANALYZING = 7,
     FASTQ_ERROR = 8,
 }
+
+export enum AnalysisSequencingType {
+    WGS = "WGS",
+    WES = "WES"
+}

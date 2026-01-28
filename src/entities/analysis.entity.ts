@@ -1,4 +1,4 @@
-import { AnalysisStatus } from '@/enums';
+import { AnalysisSequencingType, AnalysisStatus } from '@/enums';
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { AbstractEntity } from './abstract.entity';
 
@@ -10,20 +10,8 @@ export class Analysis extends AbstractEntity{
   @Column()
   user_id: number;
 
-  @Column({
-    nullable: true
-  })
-  data_type: string;
-
-  @Column({
-    nullable: true
-  })
-  control: string;
-
-  @Column({
-    nullable: true
-  })
-  genotype: string;
+  @Column()
+  sequencing_type: AnalysisSequencingType;
 
   @Column({
     nullable: true

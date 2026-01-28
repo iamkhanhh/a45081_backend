@@ -26,7 +26,8 @@ async function bootstrap() {
   app.use(cookieParser());
 
   app.use(cors({
-    origin: 'http://localhost:4200', 
+    origin: configService.get<string>('ALLOWED_ORIGINS')?.split(',') || 'http://localhost:4200',
+    // origin: 'http://localhost:4200', 
     // origin: '*', 
     // methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', 
     credentials: true, 

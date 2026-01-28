@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsOptional, IsString } from "class-validator"
+import { AnalysisSequencingType } from "@/enums"
+import { IsEnum, IsNotEmpty, IsOptional, IsString } from "class-validator"
 
 export class CreateAnalysisDto {
     @IsNotEmpty()
@@ -28,4 +29,9 @@ export class CreateAnalysisDto {
     @IsNotEmpty()
     @IsString()
     assembly: string
+
+    @IsNotEmpty()
+    @IsString()
+    @IsEnum(AnalysisSequencingType)
+    sequencing_type: AnalysisSequencingType;
 }
