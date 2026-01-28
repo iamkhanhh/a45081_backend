@@ -37,6 +37,7 @@ export class AnalysisService {
   ) { }
 
   async create(createAnalysisDto: CreateAnalysisDto, user_id: number) {
+    let workspace = await this.workspacesService.index(createAnalysisDto.project_id);
     const uploads = await this.uploadsService.findUploadsBySampleId(createAnalysisDto.sample_id);
     const newAnalysis = new Analysis();
 
@@ -67,6 +68,8 @@ export class AnalysisService {
 
       await this.s3Provider.copyObject(source, destination);
     }
+
+    await this.workspacesService.update(workspace.data.id, {number: workspace.data.number++});
 
     return {
       status: 'success',
