@@ -243,6 +243,7 @@ export class AnalysisService {
         analyzed: analyzed,
         variants: analysis.variants,
         assembly: analysis.assembly,
+        sequencing_type: analysis.sequencing_type,
         status: Analysis.getAnalysisStatus(analysis.status),
       }
     }));
