@@ -44,6 +44,12 @@ export class VariantsService {
       pipeCount.push(match);
     }
 
+    pipeline.push({
+      $addFields: {
+        clinsigPriority: this.makeClinsigPriority()
+      }
+    });
+    pipeline.push({ $sort: { clinsigPriority: 1 } });
     pipeline.push({ $skip: offset });
     pipeline.push({ $limit: pageSize });
     pipeline.push({ $project: this.projectFields() });
@@ -365,5 +371,62 @@ export class VariantsService {
       console.log('VariantsService@deleteSelectedVariant:', error);
       throw new BadRequestException('Error!');
     }
+  }
+
+  makeClinsigPriority() {
+    return {
+      "$ifNull": [
+        "$CLINSIG_PRIORITY",
+        {
+          "$cond": {
+            "if": {
+              "$eq": ["$CLINSIG_FINAL", "drug response"]
+            },
+            "then": 0,
+            "else": {
+              "$cond": {
+                "if": {
+                  "$eq": ["$CLINSIG_FINAL", "pathogenic"]
+                },
+                "then": 1,
+                "else": {
+                  "$cond": {
+                    "if": {
+                      "$eq": ["$CLINSIG_FINAL", "likely pathogenic"]
+                    },
+                    "then": 2,
+                    "else": {
+                      "$cond": {
+                        "if": {
+                          "$eq": ["$CLINSIG_FINAL", "uncertain significance"]
+                        },
+                        "then": 3,
+                        "else": {
+                          "$cond": {
+                            "if": {
+                              "$eq": ["$CLINSIG_FINAL", "likely benign"]
+                            },
+                            "then": 4,
+                            "else": {
+                              "$cond": {
+                                "if": {
+                                  "$eq": ["$CLINSIG_FINAL", "benign"]
+                                },
+                                "then": 5,
+                                "else": 6
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    };
   }
 }
