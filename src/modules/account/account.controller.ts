@@ -1,13 +1,17 @@
-import { Controller, Get, Request, Body, Patch, Param, Put } from '@nestjs/common';
+import { Controller, Get, Request, Body, Patch, Put } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AccountService } from './account.service';
 import { UpdateAccountDto } from './dto/update-account.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 
+@ApiTags('Account')
 @Controller('account')
 export class AccountController {
   constructor(private readonly accountService: AccountService) {}
 
   @Get('account-statistics')
+  @ApiOperation({ summary: 'Get account statistics' })
+  @ApiResponse({ status: 200, description: 'Account statistics retrieved successfully' })
   getAccountStatistics(
     @Request() req,
   ) {
@@ -15,6 +19,8 @@ export class AccountController {
   }
 
   @Get()
+  @ApiOperation({ summary: 'Get current account information' })
+  @ApiResponse({ status: 200, description: 'Account information retrieved successfully' })
   getAccount(
     @Request() req,
   ) {
@@ -22,6 +28,9 @@ export class AccountController {
   }
 
   @Patch('update-password')
+  @ApiOperation({ summary: 'Update account password' })
+  @ApiResponse({ status: 200, description: 'Password updated successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
   updatePassword(
     @Request() req,
     @Body() updatePasswordDto: UpdatePasswordDto
@@ -30,6 +39,9 @@ export class AccountController {
   }
 
   @Put()
+  @ApiOperation({ summary: 'Update account information' })
+  @ApiResponse({ status: 200, description: 'Account updated successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
   update(
     @Request() req,
     @Body() UpdateAccountDto: UpdateAccountDto
