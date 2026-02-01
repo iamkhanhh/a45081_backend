@@ -51,6 +51,7 @@ export class AnalysisService {
     newAnalysis.assembly = createAnalysisDto.assembly;
     newAnalysis.user_id = user_id;
     newAnalysis.is_deleted = 0;
+    newAnalysis.sequencing_type = createAnalysisDto.sequencing_type;
 
     if (createAnalysisDto.p_type == 'vcf') {
       newAnalysis.status = AnalysisStatus.QUEUING;
