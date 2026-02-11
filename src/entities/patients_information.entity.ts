@@ -17,4 +17,13 @@ export class PatientsInformation extends AbstractEntity{
 
   @Column()
   sample_id: number;
+
+  @Column()
+  gender: string;
+
+  @Column()
+  ethnicity: string;
+
+  @Column()
+  sample_type: string;
 }

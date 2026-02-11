@@ -8,4 +8,7 @@ export class Pipelines extends AbstractEntity{
 
   @Column()
   version: string;
+
+  @Column({default: 0})
+  is_deleted: number;
 }

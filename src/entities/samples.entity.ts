@@ -9,21 +9,6 @@ export class Samples extends AbstractEntity{
   @Column()
   user_id: number;
 
-  @Column({
-    nullable: true
-  })
-  data_type: number;
-
-  @Column({
-    nullable: true
-  })
-  control: string;
-
-  @Column({
-    nullable: true
-  })
-  genotype: string;
-
   @Column()
   file_size: number;
 

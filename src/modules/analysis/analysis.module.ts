@@ -7,10 +7,11 @@ import { PipelinesModule } from '../pipelines/pipelines.module';
 import { UploadsModule } from '../uploads/uploads.module';
 import { SamplesModule } from '../samples/samples.module';
 import { WorkspacesModule } from '../workspaces/workspaces.module';
+import { Genes } from '@/entities/genes.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Analysis]),
+    TypeOrmModule.forFeature([Analysis, Genes]),
     PipelinesModule,
     UploadsModule,
     SamplesModule,

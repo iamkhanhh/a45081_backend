@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { CreateSampleDto } from './dto/create-sample.dto';
+import { CreateSampleFastQDto } from './dto/create-sample-fastq.dto';
 import { UpdateSampleDto } from './dto/update-sample.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Samples, Uploads } from '@/entities';
@@ -16,6 +16,7 @@ import { UploadsService } from '../uploads/uploads.service';
 import { PatientsInformationService } from '../patient-information/patient-information.service';
 import { GeneratePresignedUrls } from './dto/generate-presigned-urls.dto';
 import { CompleteUploadDto } from './dto/complete-upload.dto';
+import { UpdateUploadDto } from '../uploads/dto/update-upload.dto';
 
 @Injectable()
 export class SamplesService {
@@ -29,8 +30,69 @@ export class SamplesService {
     private readonly patientsInformationService: PatientsInformationService,
   ) { }
 
-  create(createSampleDto: CreateSampleDto) {
+  create(createSampleFastQDto: CreateSampleFastQDto) {
     return 'This action adds a new sample';
+  }
+
+  async createSampleFastQ(body: CreateSampleFastQDto[], user_id: number) {
+    for (let sample of body) {
+      let reverse = sample.reverse[0];
+      let forward = sample.forward[0];
+
+      let forwardUploadInfor: UpdateUploadDto = {
+        file_path: `${this.configService.get('UPLOAD_FOLDER')}/${user_id}/${forward.uploadName}`,
+        upload_name: forward.uploadName,
+        upload_status: UploadStatus.COMPLETED,
+        fastq_pair_index: 1
+      }
+
+      let reverseUploadInfor: UpdateUploadDto = {
+        file_path: `${this.configService.get('UPLOAD_FOLDER')}/${user_id}/${reverse.uploadName}`,
+        upload_name: reverse.uploadName,
+        upload_status: UploadStatus.COMPLETED,
+        fastq_pair_index: 2
+      }
+
+      await this.uploadsService.update(forward.uploadId, forwardUploadInfor);
+      await this.uploadsService.update(reverse.uploadId, reverseUploadInfor);
+
+      // create sample
+      let sampleInfor = {
+        name: sample.sampleName,
+        user_id: user_id,
+        file_size: sample.file_size,
+        file_type: sample.file_type,
+        complete_status: SampleStatus.COMPLETED
+      }
+      const sampleSaved = await this.createSample(sampleInfor);
+      if (!sampleSaved) {
+        throw new BadRequestException('Sample created failed!');
+      }
+
+      await this.uploadsService.updateSampleId(forward.uploadId, sampleSaved.id);
+      await this.uploadsService.updateSampleId(reverse.uploadId, sampleSaved.id);
+
+      // create patient infor
+      let patientInfor = {
+        first_name: sample.firstName,
+        last_name: sample.lastName,
+        dob: sample.dob,
+        phenotype: sample.phenotype,
+        sample_id: sampleSaved.id,
+        gender: '',
+        ethnicity: '',
+        sample_type: '',
+      }
+      const patient = await this.patientsInformationService.create(patientInfor);
+      if (!patient) {
+        throw new BadRequestException('Patient Information create failed')
+      }
+    }
+
+    return {
+      status: 'success',
+      message: 'Create FastQ samples successfully'
+    }
   }
 
   async findAll(id: number, page: number, pageSize: number, filterSampleDto: FilterSampleDto) {
@@ -71,8 +133,16 @@ export class SamplesService {
     };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} sample`;
+  async findOne(id: number) {
+    const sample = await this.samplesRepository.findOne({ where: { id } });
+    if (!sample) {
+      throw new BadRequestException('That sample could not be found')
+    }
+    return {
+      status: 'success',
+      message: 'got sample successfully!',
+      data: sample
+    };
   }
 
   async getSamplesByPipeLine(id: number) {
@@ -180,7 +250,10 @@ export class SamplesService {
       last_name: postFileInforDto.last_name,
       dob: postFileInforDto.dob,
       phenotype: postFileInforDto.phenotype,
-      sample_id: sample.id
+      sample_id: sample.id,
+      gender: '',
+      ethnicity: '',
+      sample_type: '',
     }
     const patient = await this.patientsInformationService.create(patientInfor);
     if (!patient) {

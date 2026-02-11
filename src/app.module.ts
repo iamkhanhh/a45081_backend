@@ -8,7 +8,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Analysis, GeneClinicalSynopsis, PatientsInformation, Pipelines, Samples, Uploads, Users, Workspaces } from './entities';
+import { Analysis, GeneClinicalSynopsis, PatientsInformation, Pipelines, Samples, Uploads, Users, Workspaces, Genes } from './entities';
 import { AuthGuard } from './auth/passport/auth.guard';
 import { PipelinesModule } from './modules/pipelines/pipelines.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
@@ -17,7 +17,12 @@ import { PatientInformationModule } from './modules/patient-information/patient-
 import { SamplesModule } from './modules/samples/samples.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { CommonModule } from './common/common.module';
+import { AccountModule } from './modules/account/account.module';
+import { VariantsModule } from './modules/variants/variants.module';
 import environmentValidation from './config/environment.validation';
+import { ScheduleModule } from '@nestjs/schedule';
+import { VepModule } from './modules/vep/vep.module';
+import { VariantCallingModule } from './modules/variant-calling/variant-calling.module';
 
 const ENV = process.env.NODE_ENV || 'development';
 
@@ -70,12 +75,17 @@ const ENV = process.env.NODE_ENV || 'development';
         username: configService.get('DB_USERNAME'),
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_DATABSE'),
-        entities: [Analysis, GeneClinicalSynopsis, PatientsInformation, Pipelines, Samples, Uploads, Users, Workspaces],
+        entities: [Analysis, GeneClinicalSynopsis, PatientsInformation, Pipelines, Samples, Uploads, Users, Workspaces, Genes],
         synchronize: false,
       }),
       inject: [ConfigService],
     }),
-    CommonModule
+    CommonModule,
+    AccountModule,
+    VariantsModule,
+    ScheduleModule.forRoot(),
+    VepModule,
+    VariantCallingModule
   ],
   controllers: [AppController],
   providers: [

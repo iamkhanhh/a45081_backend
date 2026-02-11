@@ -47,7 +47,7 @@ export class PaginationProvider {
         totalPages: totalPages,
         pageBegin,
         pageEnd
-    };;
+    };
 
     return finalResponse;
   }

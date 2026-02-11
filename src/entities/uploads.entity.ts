@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { AbstractEntity } from './abstract.entity';
+import { UploadStatus } from '@/enums/uploads.enum';
 
 @Entity()
 export class Uploads extends AbstractEntity{
@@ -37,11 +38,11 @@ export class Uploads extends AbstractEntity{
 
   static getUploadStatus(status: number): string {
     switch (status) {
-      case 0:
+      case UploadStatus.UPLOADING:
         return 'Uploading';
-      case 1:
+      case UploadStatus.COMPLETED:
         return 'Completed';
-      case 2:
+      case UploadStatus.ERROR:
         return 'Error';
       default:
         return 'N/A'
