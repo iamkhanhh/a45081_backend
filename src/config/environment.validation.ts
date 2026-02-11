@@ -11,7 +11,7 @@ export default Joi.object({
     DB_PORT: Joi.number().port().default(3306),
     DB_PASSWORD: Joi.string().required(),
     DB_HOST: Joi.string().required(),
-    DB_DATABSE: Joi.string().required(),
+    DB_DATABASE: Joi.string().required(),
     DB_USERNAME: Joi.string().required(),
     MONGO_DB_PREFIX: Joi.string().required(),
     MONGO_DB_HOST: Joi.string().required(),
