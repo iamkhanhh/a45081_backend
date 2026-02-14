@@ -74,7 +74,7 @@ const ENV = process.env.NODE_ENV || 'development';
         port: configService.get<number>('DB_PORT'),
         username: configService.get('DB_USERNAME'),
         password: configService.get('DB_PASSWORD'),
-        database: configService.get('DB_DATABSE'),
+        database: configService.get('DB_DATABASE'),
         entities: [Analysis, GeneClinicalSynopsis, PatientsInformation, Pipelines, Samples, Uploads, Users, Workspaces, Genes],
         synchronize: false,
       }),
