@@ -23,6 +23,8 @@ import environmentValidation from './config/environment.validation';
 import { ScheduleModule } from '@nestjs/schedule';
 import { VepModule } from './modules/vep/vep.module';
 import { VariantCallingModule } from './modules/variant-calling/variant-calling.module';
+import { ChatConversations } from './entities/chat_conversations.entity';
+import { ChatbotModule } from './modules/chatbot/chatbot.module';
 
 const ENV = process.env.NODE_ENV || 'development';
 
@@ -75,7 +77,7 @@ const ENV = process.env.NODE_ENV || 'development';
         username: configService.get('DB_USERNAME'),
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_DATABASE'),
-        entities: [Analysis, GeneClinicalSynopsis, PatientsInformation, Pipelines, Samples, Uploads, Users, Workspaces, Genes],
+        entities: [Analysis, GeneClinicalSynopsis, PatientsInformation, Pipelines, Samples, Uploads, Users, Workspaces, Genes, ChatConversations],
         synchronize: false,
       }),
       inject: [ConfigService],
@@ -85,7 +87,8 @@ const ENV = process.env.NODE_ENV || 'development';
     VariantsModule,
     ScheduleModule.forRoot(),
     VepModule,
-    VariantCallingModule
+    VariantCallingModule,
+    ChatbotModule
   ],
   controllers: [AppController],
   providers: [
