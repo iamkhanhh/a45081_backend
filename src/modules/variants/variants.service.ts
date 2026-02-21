@@ -66,7 +66,7 @@ export class VariantsService {
       item.gene_omim = omim?.gene_omim || null;
     }
 
-    await this.mongodbProvider.mongodbDisconnect();
+    // await this.mongodbProvider.mongodbDisconnect();
 
     return {
       status: "success",
@@ -141,7 +141,7 @@ export class VariantsService {
       collection.aggregate(pipeline, { allowDiskUse: true }).toArray()
     ]);
 
-    await this.mongodbProvider.mongodbDisconnect();
+    // await this.mongodbProvider.mongodbDisconnect();
 
     return {
       status: "success",

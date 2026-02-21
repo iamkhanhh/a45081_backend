@@ -104,7 +104,7 @@ export class SampleImportProvider {
                 collection.aggregate(pipeCount, { allowDiskUse: true }).toArray()
             ]);
     
-            await this.mongodbProvider.mongodbDisconnect();
+            // await this.mongodbProvider.mongodbDisconnect();
     
             let variants = count[0]?.count || 0;
             this.logger.log(`Found ${variants} variants for analysis ID: ${analysis.id}`);
