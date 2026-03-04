@@ -13,7 +13,7 @@ export class Users extends AbstractEntity {
   @Column()
   email: string;
 
-  @Column()
+  @Column({ nullable: true })
   password: string;
 
   @Column()
@@ -25,17 +25,19 @@ export class Users extends AbstractEntity {
   @Column()
   user_created: number;
 
-  @Column()
+  @Column({ nullable: true })
   phone_number: string;
 
-  @Column()
+  @Column({ nullable: true })
   address: string;
 
-  @Column()
+  @Column({ nullable: true })
   institution: string;
 
   @Column()
   codeId: string;
+  @Column({ nullable: true })
+  googleId: string;
 
   @Column({ type: 'timestamp', nullable: true })
   codeExpired: Date;

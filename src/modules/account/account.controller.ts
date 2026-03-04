@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AccountService } from './account.service';
 import { UpdateAccountDto } from './dto/update-account.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @ApiTags('Account')
 @Controller('account')
@@ -47,5 +48,16 @@ export class AccountController {
     @Body() UpdateAccountDto: UpdateAccountDto
   ) {
     return this.accountService.update(req.user.id, UpdateAccountDto);
+  }
+
+  @Patch('update-profile')
+  @ApiOperation({ summary: 'Update profile information (phone_number, address, institution)' })
+  @ApiResponse({ status: 200, description: 'Profile updated successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  updateProfile(
+    @Request() req,
+    @Body() updateProfileDto: UpdateProfileDto
+  ) {
+    return this.accountService.updateProfile(req.user.id, updateProfileDto);
   }
 }

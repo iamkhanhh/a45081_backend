@@ -121,9 +121,9 @@ export class UsersService {
     if (data.password) {
       data.password = await this.hashingPasswordProvider.hashPasswordHelper(data.password);
     } else {
-      delete data.password; 
+      delete data.password;
     }
-    await this.usersRepository.update({email: data.email}, {...data});
+    await this.usersRepository.update({ email: data.email }, { ...data });
     return {
       status: 'success',
       message: 'Update user successfully'
@@ -138,6 +138,42 @@ export class UsersService {
 
     const hashPassword = await this.hashingPasswordProvider.hashPasswordHelper(password);
     return await this.usersRepository.update({ id: user_id }, { password: hashPassword });
+  }
+
+
+  async CreateGoogleUser(profile: any): Promise<Users> {
+    const googleId = profile.googleId || profile.id;
+    const email = profile.email;
+    const firstName = profile.first_name || '';
+    const lastName = profile.last_name || '';
+
+    const newUser = new Users();
+    newUser.email = email;
+    newUser.googleId = googleId;
+    newUser.first_name = firstName;
+    newUser.last_name = lastName;
+    newUser.role = UserRole.USER;
+    newUser.status = UserStatus.ACTIVE;
+    newUser.phone_number = null;
+    newUser.address = null;
+    newUser.institution = null;
+    newUser.user_created = 1; 
+    newUser.codeId = '';
+    
+    const saved = await this.usersRepository.save(newUser);
+    return saved;
+  }
+
+  async updateGoogleId(userId: number, googleId: string): Promise<void> {
+    await this.usersRepository.update({ id: userId }, { googleId });
+  }
+
+  async updateProfile(userId: number, updateData: any): Promise<any> {
+    await this.usersRepository.update({ id: userId }, updateData);
+    return {
+      status: 'success',
+      message: 'Profile updated successfully'
+    };
   }
 
   async remove(id: number) {
@@ -225,7 +261,7 @@ export class UsersService {
   }
 
   async updateAccount(id: number, updateAccountDto: UpdateAccountDto) {
-    await this.usersRepository.update({ id }, {...updateAccountDto});
+    await this.usersRepository.update({ id }, { ...updateAccountDto });
     return {
       status: 'success',
       message: 'Update successfully'

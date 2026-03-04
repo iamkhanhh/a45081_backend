@@ -11,6 +11,20 @@ import * as path from 'path';
 import * as dayjs from 'dayjs'
 import { AnalysisGateway } from '../gateways/analysis.gateway';
 
+
+// User upload file genetics
+
+// Hệ thống chạy VEP (Variant Effect Predictor)
+
+// Khi VEP xong → status = VEP_ANALYZED
+
+// Cron job phát hiện → import file TSV vào MongoDB
+
+// Đếm số variants
+
+// Update status = ANALYZED
+
+// Gửi WebSocket realtime cho frontend
 @Injectable()
 export class SampleImportProvider {
     private readonly logger = new Logger(SampleImportProvider.name);
@@ -23,7 +37,7 @@ export class SampleImportProvider {
         private readonly analysisGateway: AnalysisGateway
     ) { }
 
-    @Cron(CronExpression.EVERY_30_SECONDS)
+    // @Cron(CronExpression.EVERY_30_SECONDS)
     async checkAnalyzed() {
         let analysisImporting = await this.getAnalysisByStatus(AnalysisStatus.IMPORTING);
         if (analysisImporting) {

@@ -6,6 +6,7 @@ import { Users } from '@/entities';
 import { UserStatus } from '@/enums';
 import { HashingPasswordProvider } from '@/common/providers/hashing-password.provider';
 
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -56,4 +57,31 @@ export class AuthService {
   async forgotPassword(email: string) {
     return await this.usersService.forgotPassword(email);
   }
+
+  async validateOrCreateGoogleUser(profile: any): Promise<any> {
+    const email = profile.emails?.[0]?.value || profile.email;
+    const firstName = profile.name?.givenName || profile.first_name || '';
+    const lastName = profile.name?.familyName || profile.last_name || '';
+    const googleId = profile.id;
+
+    let user = await this.usersService.findByEmail(email);
+    
+    if (!user) {
+      user = await this.usersService.CreateGoogleUser({
+        email,
+        first_name: firstName,
+        last_name: lastName,
+        googleId,
+      });
+    } else {
+      if (!user.googleId) {
+        await this.usersService.updateGoogleId(user.id, googleId);
+        user.googleId = googleId;
+      }
+    }
+    
+    return user;
+  }
+
+
 }

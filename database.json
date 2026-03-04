@@ -4,7 +4,7 @@
     "host": "localhost",
     "port": 33069,
     "user": "root",
-    "password": "khanh123",
+    "password": "123456",
     "database": "genetics",
     "charset": "utf8",
     "collation": "utf8_unicode_ci"

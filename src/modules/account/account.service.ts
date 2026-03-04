@@ -66,6 +66,15 @@ export class AccountService {
     return await this.usersService.updateAccount(id, updateAccountDto);
   }
 
+  async updateProfile(id: number, updateProfileDto: any) {
+    let user = await this.usersService.findOne(id);
+    if (!user) {
+      throw new BadRequestException("User not found");
+    }
+    
+    return await this.usersService.updateProfile(id, updateProfileDto);
+  }
+
   async getAccountStatistics(user_id: number) {
     const lastSixMonthsNumbers = this.getLastSixMonths();
 

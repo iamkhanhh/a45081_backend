@@ -2,6 +2,7 @@ import { Controller, Post, UseGuards, Request, Get, Body, Param, Res, ParseIntPi
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './passport/local-auth.guard';
+import { GoogleAuthGuard } from './passport/google-auth.guard';
 import { Public } from '@/decorators';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { Response } from 'express';
@@ -53,6 +54,38 @@ export class AuthController {
   googleAuthentication(@Body() body: any) {
     console.log(body);
     return true
+  }
+
+  @Public()
+  @Get('google')
+  @UseGuards(GoogleAuthGuard)
+  @ApiOperation({ summary: 'Initiate Google OAuth login' })
+  googleAuth() {
+    // Passport sẽ tự động redirect đến Google
+  }
+
+  @Public()
+  @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
+  @ApiOperation({ summary: 'Google OAuth callback endpoint' })
+  @ApiResponse({ status: 200, description: 'Google authentication successful' })
+  async googleAuthRedirect(
+    @Request() req,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    {
+      const user = await this.authService.validateOrCreateGoogleUser(req.user);
+      const { access_token } = await this.authService.login(user);
+      res.cookie('access_token', access_token, {
+        maxAge: 365 * 24 * 60 * 60 * 1000, 
+        sameSite: 'strict',
+        httpOnly: true,
+      });
+      return {
+        status: 'success',
+        message: 'Logged in successfully with Google',
+      };
+    }
   }
 
   @Public()
