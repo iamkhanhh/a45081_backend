@@ -89,6 +89,17 @@ export class S3Provider {
         return await this.s3Client.completeMultipartUpload(params).promise();
     }
 
+    async generateDownloadUrl(fileName: string): Promise<string> {
+        const params = {
+            Bucket: this.configService.get<string>('AWS_BUCKET'),
+            Key: fileName,
+            Expires: 60 * 5,
+            ResponseContentDisposition: `attachment; filename="${path.basename(fileName)}"`
+        };
+
+        return this.s3Client.getSignedUrlPromise('getObject', params);
+    }
+
     generateFileName(name: string) {
         name = name.replace(/\s/g, '_').trim();
 
