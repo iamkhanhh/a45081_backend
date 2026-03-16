@@ -142,10 +142,8 @@ export class ReportService {
             linebreaks: true
         });
 
-        doc.setData(data);
-
         try {
-            doc.render();
+            doc.render(data);
         } catch (error) {
             throw new BadRequestException("Error rendering report template");
         }
