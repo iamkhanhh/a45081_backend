@@ -289,6 +289,55 @@ export class SamplesService {
     return samples.map(sample => sample.id);
   }
 
+  async getTotal(user_id: number) {
+    const samples = await this.samplesRepository.find({where: {user_id: user_id, complete_status: SampleStatus.COMPLETED}});
+    return samples.length;
+  }
+
+  async getSamplesStaticsByAssembly(user_id: number) {
+    const hg19 = await this.samplesRepository.count({ where: { user_id: user_id, complete_status: SampleStatus.COMPLETED, assembly: 'hg19' } });
+    const hg38 = await this.samplesRepository.count({ where: { user_id: user_id, complete_status: SampleStatus.COMPLETED, assembly: 'hg38' } });
+
+    return {
+      hg19,
+      hg38
+    };
+  }
+
+  async getSamplesStaticsByFileType(user_id: number) {
+    const vcf = await this.samplesRepository.count({ where: { user_id: user_id, complete_status: SampleStatus.COMPLETED, file_type: 'vcf' } });
+    const fastq = await this.samplesRepository.count({ where: { user_id: user_id, complete_status: SampleStatus.COMPLETED, file_type: 'fastq' } });
+
+    return {
+      vcf,
+      fastq
+    };
+  }
+
+  async getSamplesLastSixMonths(user_id: number, lastSixMonthsNumbers: number[]) {
+    let data = [];
+
+    const now = new Date();
+    let currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+
+    for (let month of lastSixMonthsNumbers) {
+
+      let year = month > currentMonth ? currentYear - 1 : currentYear;
+
+      const results = await this.samplesRepository
+        .createQueryBuilder('samples')
+        .where('MONTH(samples.createdAt) = :month', { month })
+        .andWhere('YEAR(samples.createdAt) = :year', { year })
+        .andWhere('samples.user_id = :user_id', { user_id })
+        .getMany();
+
+      data.push(results.length);
+    }
+
+    return data;
+  }
+
   update(id: number, updateSampleDto: UpdateSampleDto) {
     return `This action updates a #${id} sample`;
   }

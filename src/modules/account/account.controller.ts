@@ -18,6 +18,15 @@ export class AccountController {
     return this.accountService.getAccountStatistics(req.user.id);
   }
 
+  @Get('dashboard')
+  @ApiOperation({ summary: 'Get account dashboard' })
+  @ApiResponse({ status: 200, description: 'Account dashboard retrieved successfully' })
+  getAccountDashboard(
+    @Request() req,
+  ) {
+    return this.accountService.getAccountDashboard(req.user.id);
+  }
+
   @Get()
   @ApiOperation({ summary: 'Get current account information' })
   @ApiResponse({ status: 200, description: 'Account information retrieved successfully' })
