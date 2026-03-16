@@ -6,6 +6,7 @@ import { WorkspacesService } from '../workspaces/workspaces.service';
 import { AnalysisService } from '../analysis/analysis.service';
 import { HashingPasswordProvider } from '@/common/providers/hashing-password.provider';
 import { UpdatePasswordDto } from './dto/update-password.dto';
+import { SamplesService } from '../samples/samples.service';
 
 @Injectable()
 export class AccountService {
@@ -14,6 +15,7 @@ export class AccountService {
     private readonly usersService: UsersService,
     private readonly workspacesService: WorkspacesService,
     private readonly analysisService: AnalysisService,
+    private readonly samplesService: SamplesService,
     private readonly hashingPasswordProvider: HashingPasswordProvider,
   ) {}
 
@@ -29,6 +31,43 @@ export class AccountService {
         ...user,
         workspaces,
         analyses
+      }
+    };
+  }
+
+  async getAccountDashboard(user_id: number) {
+    let workspaces = await this.workspacesService.getTotal(user_id);
+    let analyses = await this.analysisService.getTotal(user_id);
+    let samples = await this.samplesService.getTotal(user_id);
+
+    let analysisByStatus = await this.analysisService.getAnalysisStaticsByStatus(user_id);
+    let samplesByFileType = await this.samplesService.getSamplesStaticsByFileType(user_id);
+    let samplesbyAsembly = await this.samplesService.getSamplesStaticsByAssembly(user_id);
+
+    const lastSixMonthsNumbers = this.getLastSixMonths();
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                        
+    const lastSixMonths = lastSixMonthsNumbers.map(month => monthNames[month - 1]);
+
+    let samplesLastSixMonths = await this.samplesService.getSamplesLastSixMonths(user_id, lastSixMonthsNumbers);
+    let analysisLastSixMonths = await this.analysisService.getAnalysesStatistics(user_id, lastSixMonthsNumbers);
+
+    let recentAnalyses = await this.analysisService.getRecentAnalyses(user_id);
+
+    return {
+      status: "success",
+      message: "Get account dashboard successfully",
+      data: {
+        workspaces,
+        analyses,
+        samples,
+        analysisByStatus,
+        samplesByFileType,
+        samplesbyAsembly,
+        samplesLastSixMonths,
+        analysisLastSixMonths,
+        recentAnalyses
       }
     };
   }

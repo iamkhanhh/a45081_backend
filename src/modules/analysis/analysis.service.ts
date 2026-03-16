@@ -175,6 +175,32 @@ export class AnalysisService {
     return data;
   }
 
+  async getRecentAnalyses(user_id: number) {
+    const analyses = await this.analysisRepository.find({
+      where: { user_id: user_id, is_deleted: 0 },
+      order: { createdAt: 'DESC' },
+      take: 10
+    });
+
+    const data = await Promise.all(analyses.map(async (analysis) => {
+      const createdAt = dayjs(analysis.createdAt).format('DD/MM/YYYY');
+      const analyzed = analysis.analyzed ? dayjs(analysis.analyzed).format('DD/MM/YYYY') : '';
+      const workspaceName = await this.workspacesService.getWorkspaceName(analysis.project_id);
+      return {
+        id: analysis.id,
+        name: analysis.name,
+        workspaceName: workspaceName ? workspaceName.data : '',
+        createdAt: createdAt,
+        analyzed: analyzed,
+        variants: analysis.variants,
+        assembly: analysis.assembly,
+        status: Analysis.getAnalysisStatus(analysis.status),
+      }
+    }));
+    
+    return data;
+  }
+
   async getGeneDetail(getGeneDetailDto: GetGeneDetailDto) {
     try {
       const gene = await this.genesRepository.findOne({ where: { name: getGeneDetailDto.geneName } });
@@ -393,6 +419,20 @@ export class AnalysisService {
     return {
       status: 'success',
       message: 'Analysis status updated successfully'
+    };
+  }
+
+  async getAnalysisStaticsByStatus(user_id: number) {
+    const queuing = await this.analysisRepository.count({ where: { user_id: user_id, is_deleted: 0, status: In([AnalysisStatus.QUEUING, AnalysisStatus.FASTQ_QUEUING]) } });
+    const analyzing = await this.analysisRepository.count({ where: { user_id: user_id, is_deleted: 0, status: In([AnalysisStatus.ANALYZING, AnalysisStatus.FASTQ_ANALYZING, AnalysisStatus.VEP_ANALYZED, AnalysisStatus.IMPORTING]) } });
+    const analyzed = await this.analysisRepository.count({ where: { user_id: user_id, is_deleted: 0, status: AnalysisStatus.ANALYZED } });
+    const error = await this.analysisRepository.count({ where: { user_id: user_id, is_deleted: 0, status: In([AnalysisStatus.ERROR, AnalysisStatus.FASTQ_ERROR]) } });
+
+    return {
+      queuing,
+      analyzing,
+      analyzed,
+      error
     };
   }
 }

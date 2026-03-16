@@ -4,11 +4,13 @@ import { AccountController } from './account.controller';
 import { UsersModule } from '../users/users.module';
 import { AnalysisModule } from '../analysis/analysis.module';
 import { WorkspacesModule } from '../workspaces/workspaces.module';
+import { SamplesModule } from '../samples/samples.module';
 
 @Module({
   imports: [
     UsersModule,
     AnalysisModule,
+    SamplesModule,
     WorkspacesModule
   ],
   controllers: [AccountController],
