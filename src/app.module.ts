@@ -8,7 +8,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Analysis, GeneClinicalSynopsis, PatientsInformation, Pipelines, Samples, Uploads, Users, Workspaces, Genes } from './entities';
+import { Analysis, GeneClinicalSynopsis, PatientsInformation, Pipelines, Samples, Uploads, Users, Workspaces, Genes, Report } from './entities';
 import { AuthGuard } from './auth/passport/auth.guard';
 import { PipelinesModule } from './modules/pipelines/pipelines.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
@@ -26,6 +26,7 @@ import { VariantCallingModule } from './modules/variant-calling/variant-calling.
 import { ChatConversations } from './entities/chat_conversations.entity';
 import { ChatbotModule } from './modules/chatbot/chatbot.module';
 import { SearchModule } from './modules/search/search.module';
+import { ReportModule } from './modules/report/report.module';
 
 const ENV = process.env.NODE_ENV || 'development';
 
@@ -78,7 +79,7 @@ const ENV = process.env.NODE_ENV || 'development';
         username: configService.get('DB_USERNAME'),
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_DATABASE'),
-        entities: [Analysis, GeneClinicalSynopsis, PatientsInformation, Pipelines, Samples, Uploads, Users, Workspaces, Genes, ChatConversations],
+        entities: [Analysis, GeneClinicalSynopsis, PatientsInformation, Pipelines, Samples, Uploads, Users, Workspaces, Genes, ChatConversations, Report],
         synchronize: false,
       }),
       inject: [ConfigService],
@@ -90,7 +91,8 @@ const ENV = process.env.NODE_ENV || 'development';
     VepModule,
     VariantCallingModule,
     ChatbotModule,
-    SearchModule
+    SearchModule,
+    ReportModule
   ],
   controllers: [AppController],
   providers: [
