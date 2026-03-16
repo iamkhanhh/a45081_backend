@@ -1,7 +1,7 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateReportDto } from './dto/create-report.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Analysis, PatientsInformation, Report } from '@/entities';
+import { Report } from '@/entities';
 import { Repository } from 'typeorm';
 
 import * as fs from "fs";
@@ -11,52 +11,64 @@ import Docxtemplater from "docxtemplater";
 import { ConfigService } from '@nestjs/config';
 import { S3Provider } from '@/common/providers/s3.provider';
 import * as dayjs from 'dayjs'
+import { AnalysisService } from '../analysis/analysis.service';
+import { PatientsInformationService } from '../patient-information/patient-information.service';
 
+interface ReportVariantData {
+    gene: string;
+    change: string;
+    zygosity: string;
+    inheritance: string;
+    classification: string;
+}
+
+interface ReportTemplateData {
+    report_name: string;
+    patient_no: string;
+    patient_name: string;
+    dob: string;
+    gender: string;
+    ethnicity: string;
+    physician_name: string;
+    specimen: string;
+    received_date: string;
+    prepared_by: string;
+    report_date: string;
+    test_requested: string;
+    clinical_information: string;
+    summary: { text: string }[];
+    variants: ReportVariantData[];
+    details: { text: string }[];
+}
 
 @Injectable()
 export class ReportService {
     constructor(
-        @InjectRepository(Analysis)
-        private analysisRepository: Repository<Analysis>,
-
-        @InjectRepository(PatientsInformation)
-        private patientRepository: Repository<PatientsInformation>,
-
         @InjectRepository(Report)
         private reportRepository: Repository<Report>,
         private configService: ConfigService,
-        private s3Provider: S3Provider
-
+        private s3Provider: S3Provider,
+        private analysisService: AnalysisService,
+        private patientsInformationService: PatientsInformationService,
     ) { }
 
-    async create(createReportDto: any, user_id: number) {
+    async create(createReportDto: CreateReportDto, user_id: number) {
 
-        const analysis = await this.analysisRepository.findOne({
-            where: { id: createReportDto.analysisId }
-        });
+        const analysisResult = await this.analysisService.findOne(createReportDto.analysisId);
+        const analysis = analysisResult.data;
 
-        if (!analysis) {
-            throw new NotFoundException("Analysis not found");
-        }
+        const patientResult = await this.patientsInformationService.findOne(createReportDto.analysisId);
+        const patient = patientResult.data;
 
-        const patient = await this.patientRepository.findOne({
-            where: { sample_id: analysis.sample_id }
-        });
-
-        if (!patient) {
-            throw new NotFoundException("Patient information not found");
-        }
-
-        const formattedVariants = createReportDto.variants.map(v => ({
+        const formattedVariants: ReportVariantData[] = createReportDto.variants.map(v => ({
             gene: v.gene,
             change: v.cdna,
-            zygosity: "N\A",
-            inheritance: "N\A",
+            zygosity: "N\\A",
+            inheritance: "N\\A",
             classification: v.classification
         }));
 
-
-        const templateData = {
+        const templateData: ReportTemplateData = {
             report_name: createReportDto.report_name,
 
             patient_no: `GE-${patient.id}`,
@@ -65,7 +77,7 @@ export class ReportService {
             gender: patient.gender,
             ethnicity: patient.ethnicity,
 
-            physician_name: "N\A",
+            physician_name: "N\\A",
             specimen: patient.sample_type,
             received_date: dayjs(analysis.createdAt).format('DD/MM/YYYY'),
             prepared_by: "TLU GENETICS",
@@ -76,7 +88,7 @@ export class ReportService {
             clinical_information: patient.phenotype,
 
             summary: formattedVariants.map(v => ({
-                text: `${v.classification} VARIANT IDENTIFIED`
+                text: `${v.classification.toUpperCase()} VARIANT IDENTIFIED`
             })),
 
             variants: formattedVariants,
@@ -87,7 +99,7 @@ export class ReportService {
         };
 
         const { fileName } = await this.generateReportFile(templateData, user_id, analysis.id);
-        console.log(user_id)
+
         const report = this.reportRepository.create({
             report_name: createReportDto.report_name,
             analysis_id: createReportDto.analysisId,
@@ -95,18 +107,23 @@ export class ReportService {
             file_path: fileName,
             is_deleted: 0
         });
-        console.log(report)
+
         const downloadUrl = await this.s3Provider.generateDownloadUrl(
-            `reports/${fileName}`
+            `${this.configService.get('ANALYSIS_FOLDER')}/${user_id}/${analysis.id}/reports/${fileName}`
         );
         await this.reportRepository.save(report);
+
         return {
-            ...report,
-            downloadUrl
-        }
+            status: 'success',
+            message: 'Report created successfully',
+            data: {
+                ...report,
+                downloadUrl
+            }
+        };
     }
 
-    private async generateReportFile(data: any, user_id: number, analysis_id: number) {
+    private async generateReportFile(data: ReportTemplateData, user_id: number, analysis_id: number) {
         const templatePath = path.resolve(
             process.cwd(),
             "src/modules/report/templates/genetics_report_template.docx"
@@ -130,7 +147,6 @@ export class ReportService {
         try {
             doc.render();
         } catch (error) {
-            console.error(error);
             throw new BadRequestException("Error rendering report template");
         }
 
@@ -148,7 +164,6 @@ export class ReportService {
         }
 
         fs.writeFileSync(outputPath, new Uint8Array(buffer));
-        console.log("Saved")
 
         return {
             fileName,
@@ -157,13 +172,18 @@ export class ReportService {
     }
 
     async findAll(user_id: number) {
-        console.log(user_id)
-        return this.reportRepository.find({
+        const reports = await this.reportRepository.find({
             where: {
                 user_created: user_id,
                 is_deleted: 0
             }
         });
+
+        return {
+            status: 'success',
+            message: 'Get reports successfully',
+            data: reports
+        };
     }
 
     async findOne(user_id: number, report_id: number) {
@@ -179,13 +199,17 @@ export class ReportService {
             throw new BadRequestException('Report not found');
         }
 
-        const downloadUrl = await this.s3Provider.generateDownloadUrl(
+        const download_url = await this.s3Provider.generateDownloadUrl(
             `${this.configService.get('ANALYSIS_FOLDER')}/${user_id}/${report.analysis_id}/reports/${report.file_path}`
         );
 
         return {
-            ...report,
-            download_url: downloadUrl
+            status: 'success',
+            message: 'Get report successfully',
+            data: {
+                ...report,
+                download_url
+            }
         };
     }
 
