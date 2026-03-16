@@ -171,10 +171,11 @@ export class ReportService {
         };
     }
 
-    async findAll(user_id: number) {
+    async findAll(user_id: number, analysis_id: number) {
         const reports = await this.reportRepository.find({
             where: {
                 user_created: user_id,
+                analysis_id: analysis_id,
                 is_deleted: 0
             }
         });

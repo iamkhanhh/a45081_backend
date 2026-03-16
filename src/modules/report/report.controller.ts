@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Body, Param, Delete, Request } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Param, Delete, Request, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { ReportService } from './report.service';
 import { CreateReportDto } from './dto/create-report.dto';
 
@@ -18,9 +18,10 @@ export class ReportController {
 
     @Get()
     @ApiOperation({ summary: 'Get all reports of current user' })
+    @ApiQuery({ name: 'analysis_id', required: true, type: Number })
     @ApiResponse({ status: 200, description: 'List of reports returned successfully' })
-    findAll(@Request() req) {
-        return this.reportService.findAll(req.user.id);
+    findAll(@Request() req, @Query('analysis_id') analysis_id: string) {
+        return this.reportService.findAll(req.user.id, +analysis_id);
     }
 
     @Get(':id')
