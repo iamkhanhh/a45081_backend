@@ -15,7 +15,7 @@ import { Genes } from '@/entities/genes.entity';
     PipelinesModule,
     UploadsModule,
     SamplesModule,
-    forwardRef(() => WorkspacesModule)
+    forwardRef(() => WorkspacesModule),
   ],
   controllers: [AnalysisController],
   providers: [AnalysisService],

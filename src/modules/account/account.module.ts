@@ -7,12 +7,7 @@ import { WorkspacesModule } from '../workspaces/workspaces.module';
 import { SamplesModule } from '../samples/samples.module';
 
 @Module({
-  imports: [
-    UsersModule,
-    AnalysisModule,
-    SamplesModule,
-    WorkspacesModule
-  ],
+  imports: [UsersModule, AnalysisModule, SamplesModule, WorkspacesModule],
   controllers: [AccountController],
   providers: [AccountService],
 })

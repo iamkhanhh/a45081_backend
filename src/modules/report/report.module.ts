@@ -12,9 +12,9 @@ import { AnalysisModule } from '../analysis/analysis.module';
     TypeOrmModule.forFeature([Report]),
     VariantsModule,
     AnalysisModule,
-    PatientInformationModule
+    PatientInformationModule,
   ],
   controllers: [ReportController],
   providers: [ReportService],
 })
-export class ReportModule { }
+export class ReportModule {}

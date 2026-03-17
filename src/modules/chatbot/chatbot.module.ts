@@ -5,11 +5,9 @@ import { ChatbotController } from './chatbot.controller';
 import { ChatbotService } from './chatbot.service';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([ChatConversations]),
-    ],
-    controllers: [ChatbotController],
-    providers: [ChatbotService],
-    exports: [ChatbotService],
+  imports: [TypeOrmModule.forFeature([ChatConversations])],
+  controllers: [ChatbotController],
+  providers: [ChatbotService],
+  exports: [ChatbotService],
 })
-export class ChatbotModule { }
+export class ChatbotModule {}

@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ParseIntPipe,
+  Request,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { UploadsService } from './uploads.service';
 import { UpdateUploadDto } from './dto/update-upload.dto';
@@ -11,12 +21,12 @@ export class UploadsController {
 
   @Post('fastq')
   @ApiOperation({ summary: 'Create a new FASTQ upload record' })
-  @ApiResponse({ status: 201, description: 'Upload record created successfully' })
+  @ApiResponse({
+    status: 201,
+    description: 'Upload record created successfully',
+  })
   @ApiResponse({ status: 400, description: 'Bad request' })
-  create(
-    @Body() createUploadDto: CreateUploadForSample,
-    @Request() req,
-  ) {
+  create(@Body() createUploadDto: CreateUploadForSample, @Request() req) {
     return this.uploadsService.createUploadFastQ(createUploadDto, req.user.id);
   }
 
@@ -41,7 +51,10 @@ export class UploadsController {
   @ApiParam({ name: 'id', example: 1, description: 'Upload ID' })
   @ApiResponse({ status: 200, description: 'Upload updated successfully' })
   @ApiResponse({ status: 404, description: 'Upload not found' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() updateUploadDto: UpdateUploadDto) {
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateUploadDto: UpdateUploadDto,
+  ) {
     return this.uploadsService.update(id, updateUploadDto);
   }
 

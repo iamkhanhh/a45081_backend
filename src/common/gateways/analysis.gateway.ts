@@ -9,7 +9,7 @@ import { UpdateStatusSocket } from '../interfaces/updateStatusSocket.interface';
 })
 export class AnalysisGateway {
   @WebSocketServer() server: Server;
-  
+
   sendAnalysisStatusUpdate(data: UpdateStatusSocket) {
     this.server.emit('analysisStatusUpdate', data);
   }

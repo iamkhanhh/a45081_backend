@@ -8,10 +8,10 @@ import { AnalysisModule } from '../analysis/analysis.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([PatientsInformation]),
-    forwardRef(() => AnalysisModule)
+    forwardRef(() => AnalysisModule),
   ],
   controllers: [PatientInformationController],
   providers: [PatientsInformationService],
-  exports: [PatientsInformationService]
+  exports: [PatientsInformationService],
 })
 export class PatientInformationModule {}

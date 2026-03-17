@@ -1,8 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, Column } from 'typeorm';
 import { AbstractEntity } from './abstract.entity';
 
 @Entity()
-export class PatientsInformation extends AbstractEntity{
+export class PatientsInformation extends AbstractEntity {
   @Column()
   first_name: string;
 
@@ -12,7 +12,7 @@ export class PatientsInformation extends AbstractEntity{
   @Column()
   dob: Date;
 
-  @Column({ type: 'text'})
+  @Column({ type: 'text' })
   phenotype: string;
 
   @Column()

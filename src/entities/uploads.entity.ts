@@ -1,9 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, Column } from 'typeorm';
 import { AbstractEntity } from './abstract.entity';
 import { UploadStatus } from '@/enums/uploads.enum';
 
 @Entity()
-export class Uploads extends AbstractEntity{
+export class Uploads extends AbstractEntity {
   @Column()
   original_name: string;
 
@@ -29,7 +29,7 @@ export class Uploads extends AbstractEntity{
   sample_id: number;
 
   @Column({
-    nullable: true
+    nullable: true,
   })
   fastq_pair_index: number;
 
@@ -45,7 +45,7 @@ export class Uploads extends AbstractEntity{
       case UploadStatus.ERROR:
         return 'Error';
       default:
-        return 'N/A'
+        return 'N/A';
     }
   }
 }

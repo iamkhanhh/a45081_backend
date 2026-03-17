@@ -17,12 +17,12 @@ import { AuthGuard } from './passport/auth.guard';
         global: true,
         secret: configService.get<string>('JWT_SECRET'),
         signOptions: {
-            expiresIn: configService.get<string>('JWT_ACCESS_TOKEN_EXPIRED'),
+          expiresIn: configService.get<string>('JWT_ACCESS_TOKEN_EXPIRED'),
         },
       }),
       inject: [ConfigService],
     }),
-    PassportModule
+    PassportModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, LocalStrategy, JwtStrategy, AuthGuard],

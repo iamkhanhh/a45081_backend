@@ -10,7 +10,7 @@ import { AnalysisModule } from '../analysis/analysis.module';
   imports: [
     TypeOrmModule.forFeature([GeneClinicalSynopsis]),
     CommonModule,
-    AnalysisModule
+    AnalysisModule,
   ],
   controllers: [VariantsController],
   providers: [VariantsService],

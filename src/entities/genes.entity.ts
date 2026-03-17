@@ -3,12 +3,12 @@ import { AbstractEntity } from './abstract.entity';
 
 @Entity()
 export class Genes extends AbstractEntity {
-    @Column()
-    name: string;
+  @Column()
+  name: string;
 
-    @Column()
-    summary: string;
+  @Column()
+  summary: string;
 
-    @Column()
-    full_name: string;
+  @Column()
+  full_name: string;
 }

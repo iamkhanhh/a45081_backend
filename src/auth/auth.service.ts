@@ -1,5 +1,5 @@
 import { UsersService } from '@/modules/users/users.service';
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { Users } from '@/entities';
@@ -11,11 +11,17 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
-    private readonly hashingPasswordProvider: HashingPasswordProvider
+    private readonly hashingPasswordProvider: HashingPasswordProvider,
   ) {}
 
   async login(user: any) {
-    const payload = { email: user.email, id: user.id , role: Users.getUserRole(user.role), first_name: user.first_name, last_name: user.last_name};
+    const payload = {
+      email: user.email,
+      id: user.id,
+      role: Users.getUserRole(user.role),
+      first_name: user.first_name,
+      last_name: user.last_name,
+    };
     return {
       access_token: await this.jwtService.sign(payload),
     };
@@ -25,24 +31,32 @@ export class AuthService {
     const user = await this.usersService.findByEmail(email);
 
     if (!user) {
-      return null
+      return null;
     }
 
     if (user.status == UserStatus.PENDING) {
-      throw new BadRequestException('Your account is not active!')
+      throw new BadRequestException('Your account is not active!');
     } else if (user.status == UserStatus.DELETED) {
-      throw new BadRequestException('Your account is deleted! Please contact to admin')
+      throw new BadRequestException(
+        'Your account is deleted! Please contact to admin',
+      );
     } else if (user.status == UserStatus.DISABLED) {
-      throw new BadRequestException('Your account is disabled! Please contact to admin')
+      throw new BadRequestException(
+        'Your account is disabled! Please contact to admin',
+      );
     }
 
-    const isValidPassword = await this.hashingPasswordProvider.comparePasswordHelper(pass, user.password);
+    const isValidPassword =
+      await this.hashingPasswordProvider.comparePasswordHelper(
+        pass,
+        user.password,
+      );
 
     if (!isValidPassword) {
-      throw new BadRequestException('The password did not match!')
+      throw new BadRequestException('The password did not match!');
     }
 
-    return user
+    return user;
   }
 
   async register(createAuthDto: CreateAuthDto) {

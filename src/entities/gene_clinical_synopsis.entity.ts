@@ -1,8 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, Column } from 'typeorm';
 import { AbstractEntity } from './abstract.entity';
 
 @Entity()
-export class GeneClinicalSynopsis extends AbstractEntity{
+export class GeneClinicalSynopsis extends AbstractEntity {
   @Column()
   gene_omim: string;
 

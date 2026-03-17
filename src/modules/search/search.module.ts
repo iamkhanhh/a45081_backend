@@ -6,12 +6,12 @@ import { Samples, Workspaces, Analysis } from '@/entities';
 import { PipelinesModule } from '../pipelines/pipelines.module';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([Samples, Workspaces, Analysis]),
-        PipelinesModule
-    ],
-    controllers: [SearchController],
-    providers: [SearchService],
-    exports: [SearchService]
+  imports: [
+    TypeOrmModule.forFeature([Samples, Workspaces, Analysis]),
+    PipelinesModule,
+  ],
+  controllers: [SearchController],
+  providers: [SearchService],
+  exports: [SearchService],
 })
-export class SearchModule { }
+export class SearchModule {}

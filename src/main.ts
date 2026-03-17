@@ -12,26 +12,32 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const port = configService.get('PORT');
 
+  app.getHttpAdapter().getInstance().set('trust proxy', true);
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       // forbidNonWhitelisted: true,
       transform: true,
       transformOptions: {
-        enableImplicitConversion: true
-      }
+        enableImplicitConversion: true,
+      },
     }),
   );
 
   app.use(cookieParser());
 
-  app.use(cors({
-    origin: configService.get<string>('ALLOWED_ORIGINS')?.split(',') || 'http://localhost:4200',
-    // origin: 'http://localhost:4200', 
-    // origin: '*', 
-    // methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', 
-    credentials: true, 
-  }));
+  app.use(
+    cors({
+      origin:
+        configService.get<string>('ALLOWED_ORIGINS')?.split(',') ||
+        'http://localhost:4200',
+      // origin: 'http://localhost:4200',
+      // origin: '*',
+      // methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+      credentials: true,
+    }),
+  );
 
   const configDocument = new DocumentBuilder()
     .setTitle('Genetics API')
@@ -40,7 +46,8 @@ async function bootstrap() {
     .addServer('http://localhost:3000')
     .setVersion('1.0')
     .build();
-  const documentFactory = () => SwaggerModule.createDocument(app, configDocument);
+  const documentFactory = () =>
+    SwaggerModule.createDocument(app, configDocument);
   SwaggerModule.setup('api', app, documentFactory);
 
   // app.setGlobalPrefix('api/v1', { exclude: [''] });

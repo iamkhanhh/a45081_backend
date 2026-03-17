@@ -11,32 +11,39 @@ import { VariantToReportDto } from './dto/variant-to-report.dto';
 
 @Injectable()
 export class VariantsService {
-
   constructor(
-    @InjectRepository(GeneClinicalSynopsis) private geneClinicalSynopsisRepository: Repository<GeneClinicalSynopsis>,
+    @InjectRepository(GeneClinicalSynopsis)
+    private geneClinicalSynopsisRepository: Repository<GeneClinicalSynopsis>,
     private readonly configService: ConfigService,
     private readonly mongodbProvider: MongodbProvider,
-    private readonly analysisServive: AnalysisService
-  ) { }
+    private readonly analysisServive: AnalysisService,
+  ) {}
 
-  async findOne(id: number, page: number, pageSize: number, filter: FilterVariantsDto) {
+  async findOne(
+    id: number,
+    page: number,
+    pageSize: number,
+    filter: FilterVariantsDto,
+  ) {
     const offset = (page - 1) * pageSize;
     const pageBegin = offset + 1;
     const pageEnd = pageBegin + pageSize - 1;
 
     const db = await this.mongodbProvider.mongodbConnect();
-    const collection = db.collection(`${this.configService.get<string>('MONGO_DB_PREFIX')}_${id}`);
+    const collection = db.collection(
+      `${this.configService.get<string>('MONGO_DB_PREFIX')}_${id}`,
+    );
     if (!collection) {
       return {
-        status: "error",
-        message: "Collection not found",
-        data: []
+        status: 'error',
+        message: 'Collection not found',
+        data: [],
       };
     }
 
-    let pipeline = []
-    let pipeCount = []
-    let matchAnd = this.matchFilter(filter);
+    const pipeline = [];
+    const pipeCount = [];
+    const matchAnd = this.matchFilter(filter);
 
     if (matchAnd.length > 0) {
       const match = { $match: { $and: matchAnd } };
@@ -46,8 +53,8 @@ export class VariantsService {
 
     pipeline.push({
       $addFields: {
-        clinsigPriority: this.makeClinsigPriority()
-      }
+        clinsigPriority: this.makeClinsigPriority(),
+      },
     });
     pipeline.push({ $sort: { clinsigPriority: 1 } });
     pipeline.push({ $skip: offset });
@@ -57,7 +64,7 @@ export class VariantsService {
 
     const [data, count] = await Promise.all([
       collection.aggregate(pipeline, { allowDiskUse: true }).toArray(),
-      collection.aggregate(pipeCount, { allowDiskUse: true }).toArray()
+      collection.aggregate(pipeCount, { allowDiskUse: true }).toArray(),
     ]);
 
     for (const item of data) {
@@ -69,43 +76,56 @@ export class VariantsService {
     // await this.mongodbProvider.mongodbDisconnect();
 
     return {
-      status: "success",
-      message: "Get variants successfully",
+      status: 'success',
+      message: 'Get variants successfully',
       data: data,
       totalItems: count[0]?.count || 0,
       totalPages: Math.ceil((count[0]?.count || 0) / pageSize),
       pageBegin,
-      pageEnd
+      pageEnd,
     };
   }
 
   async getVariantsSelected(id: number) {
-    let chrom_pos_ref_alt_arr = [];
+    const chrom_pos_ref_alt_arr = [];
     const temp = await this.analysisServive.findOne(id);
     if (temp.status != 'success') {
-      throw new BadRequestException('Failed to fetch analysis')
+      throw new BadRequestException('Failed to fetch analysis');
     }
     const analysis = temp.data;
 
-    let variantToReport = analysis.variants_to_report ? JSON.parse(analysis.variants_to_report) : [];
+    const variantToReport = analysis.variants_to_report
+      ? JSON.parse(analysis.variants_to_report)
+      : [];
 
-    for (let i in variantToReport) {
-      let chrom_pos_ref_alt_analysis = variantToReport[i].chrom + "_" + variantToReport[i].pos + "_" + variantToReport[i].ref + "_" + variantToReport[i].alt + "_" + variantToReport[i].gene;
+    for (const i in variantToReport) {
+      const chrom_pos_ref_alt_analysis =
+        variantToReport[i].chrom +
+        '_' +
+        variantToReport[i].pos +
+        '_' +
+        variantToReport[i].ref +
+        '_' +
+        variantToReport[i].alt +
+        '_' +
+        variantToReport[i].gene;
       chrom_pos_ref_alt_arr.push(chrom_pos_ref_alt_analysis);
     }
 
     const db = await this.mongodbProvider.mongodbConnect();
-    const collection = db.collection(`${this.configService.get<string>('MONGO_DB_PREFIX')}_${id}`);
+    const collection = db.collection(
+      `${this.configService.get<string>('MONGO_DB_PREFIX')}_${id}`,
+    );
     if (!collection) {
       return {
-        status: "error",
-        message: "Collection not found",
-        data: []
+        status: 'error',
+        message: 'Collection not found',
+        data: [],
       };
     }
 
-    let pipeline = [];
-    let matchAnd = [];
+    const pipeline = [];
+    const matchAnd = [];
 
     matchAnd.push({ chrom_pos_ref_alt_gene: { $in: chrom_pos_ref_alt_arr } });
     const match = { $match: { $and: matchAnd } };
@@ -113,58 +133,76 @@ export class VariantsService {
 
     pipeline.push({
       $project: {
-        _id: "$_id",
-        id: "$chrom_pos_ref_alt_gene",
-        gene: "$gene",
-        transcript_id: "$transcript",
-        position: "$inputPos",
-        chrom: "$chrom",
-        rsid: "$rsId",
-        REF: "$REF",
-        ALT: "$ALT",
-        cnomen: "$cNomen",
-        pnomen: "$pNomen",
-        function: "$codingEffect",
-        location: "$varLocation",
-        coverage: "$coverage",
-        gnomad: "$gnomAD_exome_ALL",
-        cosmicID: "$cosmicIds",
-        classification: "$CLINSIG_FINAL",
-        clinvar: "$Clinvar_VARIANT_ID",
-        gnomAD_AFR: "$gnomAD_exome_AFR",
-        gnomAD_AMR: "$gnomAD_exome_AMR",
-        inheritance: "$inheritance"
-      }
+        _id: '$_id',
+        id: '$chrom_pos_ref_alt_gene',
+        gene: '$gene',
+        transcript_id: '$transcript',
+        position: '$inputPos',
+        chrom: '$chrom',
+        rsid: '$rsId',
+        REF: '$REF',
+        ALT: '$ALT',
+        cnomen: '$cNomen',
+        pnomen: '$pNomen',
+        function: '$codingEffect',
+        location: '$varLocation',
+        coverage: '$coverage',
+        gnomad: '$gnomAD_exome_ALL',
+        cosmicID: '$cosmicIds',
+        classification: '$CLINSIG_FINAL',
+        clinvar: '$Clinvar_VARIANT_ID',
+        gnomAD_AFR: '$gnomAD_exome_AFR',
+        gnomAD_AMR: '$gnomAD_exome_AMR',
+        inheritance: '$inheritance',
+      },
     });
 
     const [data] = await Promise.all([
-      collection.aggregate(pipeline, { allowDiskUse: true }).toArray()
+      collection.aggregate(pipeline, { allowDiskUse: true }).toArray(),
     ]);
 
     // await this.mongodbProvider.mongodbDisconnect();
 
     return {
-      status: "success",
-      message: "Get selected variants successfully",
-      data
-    }
+      status: 'success',
+      message: 'Get selected variants successfully',
+      data,
+    };
   }
 
   async selectVariantToReport(id: number, body: AddVariantsToReport) {
     const temp = await this.analysisServive.findOne(id);
     if (temp.status != 'success') {
-      throw new BadRequestException('Failed to fetch analysis')
+      throw new BadRequestException('Failed to fetch analysis');
     }
     const analysis = temp.data;
     const variants = body.variants;
 
-    let variantToReport = analysis.variants_to_report ? JSON.parse(analysis.variants_to_report) : [];
-    let newVariantToReport = [];
-    for (let i in variants) {
+    const variantToReport = analysis.variants_to_report
+      ? JSON.parse(analysis.variants_to_report)
+      : [];
+    const newVariantToReport = [];
+    for (const i in variants) {
       let check = true;
-      let chrom_pos_ref_alt = variants[i].chrom + "_" + variants[i].pos + "_" + variants[i].ref + "_" + variants[i].alt + variants[i].gene;
-      for (let j in variantToReport) {
-        let chrom_pos_ref_alt_analysis = variantToReport[j].chrom + "_" + variantToReport[j].pos + "_" + variantToReport[j].ref + "_" + variantToReport[j].alt + variantToReport[j].gene;
+      const chrom_pos_ref_alt =
+        variants[i].chrom +
+        '_' +
+        variants[i].pos +
+        '_' +
+        variants[i].ref +
+        '_' +
+        variants[i].alt +
+        variants[i].gene;
+      for (const j in variantToReport) {
+        const chrom_pos_ref_alt_analysis =
+          variantToReport[j].chrom +
+          '_' +
+          variantToReport[j].pos +
+          '_' +
+          variantToReport[j].ref +
+          '_' +
+          variantToReport[j].alt +
+          variantToReport[j].gene;
 
         if (chrom_pos_ref_alt == chrom_pos_ref_alt_analysis) {
           check = false;
@@ -175,16 +213,16 @@ export class VariantsService {
         newVariantToReport.push(variants[i]);
       }
     }
-    let arr = newVariantToReport.concat(variantToReport);
+    const arr = newVariantToReport.concat(variantToReport);
     await this.analysisServive.updateVariantsSelected(id, arr);
     return {
-      status: "success",
-      message: "Add variants to report successfully"
-    }
+      status: 'success',
+      message: 'Add variants to report successfully',
+    };
   }
 
   private matchFilter(filter: FilterVariantsDto) {
-    let matchAnd = [];
+    const matchAnd = [];
 
     // Find variants with filter:  FilterVariantsDto {
     //   chrom: [ '2', '20', 'X' ],
@@ -218,24 +256,25 @@ export class VariantsService {
     if (filter?.alleleFraction !== undefined && filter?.AFSign) {
       matchAnd.push({
         alleleFrequency: {
-          [filter.AFSign === 'lower' ? '$lte' : '$gte']: filter.alleleFraction
-        }
+          [filter.AFSign === 'lower' ? '$lte' : '$gte']: filter.alleleFraction,
+        },
       });
     }
 
     if (filter?.gnomAd !== undefined && filter?.gnomAdSign) {
       matchAnd.push({
         gnomAD_exome_ALL: {
-          [filter.gnomAdSign === 'lower' ? '$lte' : '$gte']: filter.gnomAd
-        }
+          [filter.gnomAdSign === 'lower' ? '$lte' : '$gte']: filter.gnomAd,
+        },
       });
     }
 
     if (filter?.readDepth !== undefined && filter?.readDepthSign) {
       matchAnd.push({
         readDepth: {
-          [filter.readDepthSign === 'lower' ? '$lte' : '$gte']: filter.readDepth
-        }
+          [filter.readDepthSign === 'lower' ? '$lte' : '$gte']:
+            filter.readDepth,
+        },
       });
     }
 
@@ -308,7 +347,7 @@ export class VariantsService {
       '1000g_EAS_AF': '$1000g_EAS_AF',
       HGNC_SYMONYMS: '$HGNC_SYMONYMS',
       HGNC_PRE_SYMBOL: '$HGNC_PRE_SYMBOL',
-      VAR_SCORE: '$VAR_SCORE'
+      VAR_SCORE: '$VAR_SCORE',
     };
   }
 
@@ -338,7 +377,9 @@ export class VariantsService {
       };
     } catch (error) {
       console.log('VariantsService@getOmimDiseaseForGeneName:', error);
-      throw new BadRequestException('Unable to connect to the database, please try again later!');
+      throw new BadRequestException(
+        'Unable to connect to the database, please try again later!',
+      );
     }
   }
 
@@ -346,16 +387,34 @@ export class VariantsService {
     try {
       const temp = await this.analysisServive.findOne(id);
       if (temp.status != 'success') {
-        throw new BadRequestException('Failed to fetch analysis')
+        throw new BadRequestException('Failed to fetch analysis');
       }
       const analysis = temp.data;
-      let variantToDelete = variant.chrom + "_" + variant.pos + "_" + variant.ref + "_" + variant.alt + variant.gene
-      let variants = analysis.variants_to_report ? JSON.parse(analysis.variants_to_report) : [];
+      const variantToDelete =
+        variant.chrom +
+        '_' +
+        variant.pos +
+        '_' +
+        variant.ref +
+        '_' +
+        variant.alt +
+        variant.gene;
+      const variants = analysis.variants_to_report
+        ? JSON.parse(analysis.variants_to_report)
+        : [];
 
-      let newVariantToReport = [];
-      for (let i in variants) {
-        let chrom_pos_ref_alt = variants[i].chrom + "_" + variants[i].pos + "_" + variants[i].ref + "_" + variants[i].alt + variants[i].gene;
-        
+      const newVariantToReport = [];
+      for (const i in variants) {
+        const chrom_pos_ref_alt =
+          variants[i].chrom +
+          '_' +
+          variants[i].pos +
+          '_' +
+          variants[i].ref +
+          '_' +
+          variants[i].alt +
+          variants[i].gene;
+
         if (chrom_pos_ref_alt != variantToDelete) {
           newVariantToReport.push(variants[i]);
         }
@@ -364,8 +423,8 @@ export class VariantsService {
       await this.analysisServive.updateVariantsSelected(id, newVariantToReport);
 
       return {
-        status: "success",
-        message: "Delete selected variant successfully"
+        status: 'success',
+        message: 'Delete selected variant successfully',
       };
     } catch (error) {
       console.log('VariantsService@deleteSelectedVariant:', error);
@@ -375,58 +434,58 @@ export class VariantsService {
 
   makeClinsigPriority() {
     return {
-      "$ifNull": [
-        "$CLINSIG_PRIORITY",
+      $ifNull: [
+        '$CLINSIG_PRIORITY',
         {
-          "$cond": {
-            "if": {
-              "$eq": ["$CLINSIG_FINAL", "drug response"]
+          $cond: {
+            if: {
+              $eq: ['$CLINSIG_FINAL', 'drug response'],
             },
-            "then": 0,
-            "else": {
-              "$cond": {
-                "if": {
-                  "$eq": ["$CLINSIG_FINAL", "pathogenic"]
+            then: 0,
+            else: {
+              $cond: {
+                if: {
+                  $eq: ['$CLINSIG_FINAL', 'pathogenic'],
                 },
-                "then": 1,
-                "else": {
-                  "$cond": {
-                    "if": {
-                      "$eq": ["$CLINSIG_FINAL", "likely pathogenic"]
+                then: 1,
+                else: {
+                  $cond: {
+                    if: {
+                      $eq: ['$CLINSIG_FINAL', 'likely pathogenic'],
                     },
-                    "then": 2,
-                    "else": {
-                      "$cond": {
-                        "if": {
-                          "$eq": ["$CLINSIG_FINAL", "uncertain significance"]
+                    then: 2,
+                    else: {
+                      $cond: {
+                        if: {
+                          $eq: ['$CLINSIG_FINAL', 'uncertain significance'],
                         },
-                        "then": 3,
-                        "else": {
-                          "$cond": {
-                            "if": {
-                              "$eq": ["$CLINSIG_FINAL", "likely benign"]
+                        then: 3,
+                        else: {
+                          $cond: {
+                            if: {
+                              $eq: ['$CLINSIG_FINAL', 'likely benign'],
                             },
-                            "then": 4,
-                            "else": {
-                              "$cond": {
-                                "if": {
-                                  "$eq": ["$CLINSIG_FINAL", "benign"]
+                            then: 4,
+                            else: {
+                              $cond: {
+                                if: {
+                                  $eq: ['$CLINSIG_FINAL', 'benign'],
                                 },
-                                "then": 5,
-                                "else": 6
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      ]
+                                then: 5,
+                                else: 6,
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      ],
     };
   }
 }
