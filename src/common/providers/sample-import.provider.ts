@@ -13,158 +13,158 @@ import { AnalysisGateway } from '../gateways/analysis.gateway';
 
 @Injectable()
 export class SampleImportProvider {
-  private readonly logger = new Logger(SampleImportProvider.name);
+	private readonly logger = new Logger(SampleImportProvider.name);
 
-  constructor(
-    @InjectRepository(Analysis)
-    private analysisRepository: Repository<Analysis>,
-    private readonly mongodbProvider: MongodbProvider,
-    private readonly commonProvider: CommonProvider,
-    private readonly configService: ConfigService,
-    private readonly analysisGateway: AnalysisGateway,
-  ) {}
+	constructor(
+		@InjectRepository(Analysis)
+		private analysisRepository: Repository<Analysis>,
+		private readonly mongodbProvider: MongodbProvider,
+		private readonly commonProvider: CommonProvider,
+		private readonly configService: ConfigService,
+		private readonly analysisGateway: AnalysisGateway,
+	) {}
 
-  @Cron(CronExpression.EVERY_30_SECONDS)
-  async checkAnalyzed() {
-    const analysisImporting = await this.getAnalysisByStatus(
-      AnalysisStatus.IMPORTING,
-    );
-    if (analysisImporting) {
-      return;
-    }
+	@Cron(CronExpression.EVERY_30_SECONDS)
+	async checkAnalyzed() {
+		const analysisImporting = await this.getAnalysisByStatus(
+			AnalysisStatus.IMPORTING,
+		);
+		if (analysisImporting) {
+			return;
+		}
 
-    const analysis = await this.getAnalysisByStatus(
-      AnalysisStatus.VEP_ANALYZED,
-    );
-    if (!analysis) {
-      return;
-    }
+		const analysis = await this.getAnalysisByStatus(
+			AnalysisStatus.VEP_ANALYZED,
+		);
+		if (!analysis) {
+			return;
+		}
 
-    this.logger.log(`Importing analysis with ID: ${analysis.id}`);
-    await this.analysisRepository.update(
-      { id: analysis.id },
-      { status: AnalysisStatus.IMPORTING },
-    );
-    this.analysisGateway.sendAnalysisStatusUpdate({
-      id: analysis.id,
-      status: Analysis.getAnalysisStatus(AnalysisStatus.IMPORTING),
-    });
+		this.logger.log(`Importing analysis with ID: ${analysis.id}`);
+		await this.analysisRepository.update(
+			{ id: analysis.id },
+			{ status: AnalysisStatus.IMPORTING },
+		);
+		this.analysisGateway.sendAnalysisStatusUpdate({
+			id: analysis.id,
+			status: Analysis.getAnalysisStatus(AnalysisStatus.IMPORTING),
+		});
 
-    const importCheck = await this.import(analysis);
+		const importCheck = await this.import(analysis);
 
-    if (importCheck) {
-      this.logger.log(`Import successful for analysis ID: ${analysis.id}`);
-      return await this.onImportSuccess(analysis);
-    } else {
-      this.logger.error(`Import failed for analysis ID: ${analysis.id}`);
-      return await this.onImportError(analysis);
-    }
-  }
+		if (importCheck) {
+			this.logger.log(`Import successful for analysis ID: ${analysis.id}`);
+			return await this.onImportSuccess(analysis);
+		} else {
+			this.logger.error(`Import failed for analysis ID: ${analysis.id}`);
+			return await this.onImportError(analysis);
+		}
+	}
 
-  async import(analysis: Analysis): Promise<boolean> {
-    try {
-      const collectionName = this.commonProvider.getMongoCollectionName(
-        analysis.id,
-      );
+	async import(analysis: Analysis): Promise<boolean> {
+		try {
+			const collectionName = this.commonProvider.getMongoCollectionName(
+				analysis.id,
+			);
 
-      const file_path = `${this.configService.get<string>('MOUNT_FOLDER')}/${analysis.file_path}`;
-      const file_path_import = `${this.configService.get<string>('MONGO_MOUNT_FOLDER')}/genetics/${analysis.file_path}`;
-      const dir_path_import = path.dirname(file_path_import);
+			const file_path = `${this.configService.get<string>('MOUNT_FOLDER')}/${analysis.file_path}`;
+			const file_path_import = `${this.configService.get<string>('MONGO_MOUNT_FOLDER')}/genetics/${analysis.file_path}`;
+			const dir_path_import = path.dirname(file_path_import);
 
-      await this.commonProvider.runCommand(
-        `mkdir -p "${dir_path_import}" && cp ${file_path} ${file_path_import}`,
-      );
+			await this.commonProvider.runCommand(
+				`mkdir -p "${dir_path_import}" && cp ${file_path} ${file_path_import}`,
+			);
 
-      const options = [
-        `--host ${this.configService.get<string>('MONGO_DB_HOST')} --port 27017`,
-        `--collection ${collectionName}`,
-        `--db ${this.configService.get<string>('MONGO_DB_DATABASE')}`,
-        `--type tsv`,
-        `--headerline`,
-        `--file /data/db/genetics/${analysis.file_path}`,
-        `--drop`,
-      ];
+			const options = [
+				`--host ${this.configService.get<string>('MONGO_DB_HOST')} --port 27017`,
+				`--collection ${collectionName}`,
+				`--db ${this.configService.get<string>('MONGO_DB_DATABASE')}`,
+				`--type tsv`,
+				`--headerline`,
+				`--file /data/db/genetics/${analysis.file_path}`,
+				`--drop`,
+			];
 
-      const command = `${this.configService.get<string>('MONGO_IMPORT_CMD')} ${options.join(' ')}`;
+			const command = `${this.configService.get<string>('MONGO_IMPORT_CMD')} ${options.join(' ')}`;
 
-      await this.commonProvider.runCommand(command);
+			await this.commonProvider.runCommand(command);
 
-      await this.commonProvider.runCommand(
-        `rm -rf ${this.configService.get<string>('MONGO_MOUNT_FOLDER')}/genetics`,
-      );
+			await this.commonProvider.runCommand(
+				`rm -rf ${this.configService.get<string>('MONGO_MOUNT_FOLDER')}/genetics`,
+			);
 
-      return true;
-    } catch (error) {
-      this.logger.error(error);
-      console.log('SampleImportProvider@import', error);
-      return false;
-    }
-  }
+			return true;
+		} catch (error) {
+			this.logger.error(error);
+			console.log('SampleImportProvider@import', error);
+			return false;
+		}
+	}
 
-  async onImportSuccess(analysis: Analysis) {
-    try {
-      const db = await this.mongodbProvider.mongodbConnect();
-      const collectionName = this.commonProvider.getMongoCollectionName(
-        analysis.id,
-      );
-      const collection = db.collection(collectionName);
-      if (!collection) {
-        this.logger.error(
-          `Collection ${collectionName} not found for analysis ID: ${analysis.id}`,
-        );
-        return this.onImportError(analysis);
-      }
+	async onImportSuccess(analysis: Analysis) {
+		try {
+			const db = await this.mongodbProvider.mongodbConnect();
+			const collectionName = this.commonProvider.getMongoCollectionName(
+				analysis.id,
+			);
+			const collection = db.collection(collectionName);
+			if (!collection) {
+				this.logger.error(
+					`Collection ${collectionName} not found for analysis ID: ${analysis.id}`,
+				);
+				return this.onImportError(analysis);
+			}
 
-      const pipeCount = [];
-      pipeCount.push({ $group: { _id: null, count: { $sum: 1 } } });
+			const pipeCount = [];
+			pipeCount.push({ $group: { _id: null, count: { $sum: 1 } } });
 
-      const [count] = await Promise.all([
-        collection.aggregate(pipeCount, { allowDiskUse: true }).toArray(),
-      ]);
+			const [count] = await Promise.all([
+				collection.aggregate(pipeCount, { allowDiskUse: true }).toArray(),
+			]);
 
-      // await this.mongodbProvider.mongodbDisconnect();
+			// await this.mongodbProvider.mongodbDisconnect();
 
-      const variants = count[0]?.count || 0;
-      this.logger.log(
-        `Found ${variants} variants for analysis ID: ${analysis.id}`,
-      );
+			const variants = count[0]?.count || 0;
+			this.logger.log(
+				`Found ${variants} variants for analysis ID: ${analysis.id}`,
+			);
 
-      const analyzed_time = new Date();
-      await this.analysisRepository.update(
-        { id: analysis.id },
-        {
-          status: AnalysisStatus.ANALYZED,
-          analyzed: analyzed_time,
-          variants: variants,
-        },
-      );
-      return this.analysisGateway.sendAnalysisStatusUpdate({
-        id: analysis.id,
-        status: Analysis.getAnalysisStatus(AnalysisStatus.ANALYZED),
-        analyzed: analyzed_time
-          ? dayjs(analyzed_time).format('DD/MM/YYYY')
-          : '',
-        variants: variants,
-      });
-    } catch (error) {
-      this.logger.error(error);
-      return console.log('SampleImportProvider@import', error);
-    }
-  }
+			const analyzed_time = new Date();
+			await this.analysisRepository.update(
+				{ id: analysis.id },
+				{
+					status: AnalysisStatus.ANALYZED,
+					analyzed: analyzed_time,
+					variants: variants,
+				},
+			);
+			return this.analysisGateway.sendAnalysisStatusUpdate({
+				id: analysis.id,
+				status: Analysis.getAnalysisStatus(AnalysisStatus.ANALYZED),
+				analyzed: analyzed_time
+					? dayjs(analyzed_time).format('DD/MM/YYYY')
+					: '',
+				variants: variants,
+			});
+		} catch (error) {
+			this.logger.error(error);
+			return console.log('SampleImportProvider@import', error);
+		}
+	}
 
-  async onImportError(analysis: Analysis) {
-    return await this.analysisRepository.update(
-      { id: analysis.id },
-      { status: AnalysisStatus.ERROR },
-    );
-  }
+	async onImportError(analysis: Analysis) {
+		return await this.analysisRepository.update(
+			{ id: analysis.id },
+			{ status: AnalysisStatus.ERROR },
+		);
+	}
 
-  private async getAnalysisByStatus(status: AnalysisStatus) {
-    return await this.analysisRepository.findOne({
-      where: {
-        status: status,
-        is_deleted: 0,
-      },
-    });
-  }
+	private async getAnalysisByStatus(status: AnalysisStatus) {
+		return await this.analysisRepository.findOne({
+			where: {
+				status: status,
+				is_deleted: 0,
+			},
+		});
+	}
 }

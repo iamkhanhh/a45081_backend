@@ -6,9 +6,9 @@ import { Users } from '@/entities';
 import { CommonModule } from '@/common/common.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Users]), CommonModule],
-  controllers: [UsersController],
-  providers: [UsersService],
-  exports: [UsersService],
+	imports: [TypeOrmModule.forFeature([Users]), CommonModule],
+	controllers: [UsersController],
+	providers: [UsersService],
+	exports: [UsersService],
 })
 export class UsersModule {}

@@ -4,82 +4,82 @@ import { AbstractEntity } from './abstract.entity';
 
 @Entity()
 export class Analysis extends AbstractEntity {
-  @Column()
-  name: string;
+	@Column()
+	name: string;
 
-  @Column()
-  user_id: number;
+	@Column()
+	user_id: number;
 
-  @Column()
-  sequencing_type: AnalysisSequencingType;
+	@Column()
+	sequencing_type: AnalysisSequencingType;
 
-  @Column({
-    nullable: true,
-  })
-  igv_local_path: string;
+	@Column({
+		nullable: true,
+	})
+	igv_local_path: string;
 
-  @Column()
-  sample_id: number;
+	@Column()
+	sample_id: number;
 
-  @Column()
-  project_id: number;
+	@Column()
+	project_id: number;
 
-  @Column()
-  p_type: string;
+	@Column()
+	p_type: string;
 
-  @Column({ type: 'datetime', nullable: true })
-  analyzed: Date;
+	@Column({ type: 'datetime', nullable: true })
+	analyzed: Date;
 
-  @Column()
-  variants: number;
+	@Column()
+	variants: number;
 
-  @Column()
-  size: number;
+	@Column()
+	size: number;
 
-  @Column()
-  status: number;
+	@Column()
+	status: number;
 
-  @Column({ type: 'text' })
-  variants_to_report: string;
+	@Column({ type: 'text' })
+	variants_to_report: string;
 
-  @Column()
-  file_path: string;
+	@Column()
+	file_path: string;
 
-  @Column({ type: 'text' })
-  description: string;
+	@Column({ type: 'text' })
+	description: string;
 
-  @Column({ default: 0 })
-  is_deleted: number;
+	@Column({ default: 0 })
+	is_deleted: number;
 
-  @Column({ nullable: true })
-  pipeline_id: number;
+	@Column({ nullable: true })
+	pipeline_id: number;
 
-  @Column()
-  upload_id: number;
+	@Column()
+	upload_id: number;
 
-  @Column()
-  assembly: string;
+	@Column()
+	assembly: string;
 
-  static getAnalysisStatus(status): string {
-    switch (status) {
-      case AnalysisStatus.QUEUING:
-        return 'VCF Queuing';
-      case AnalysisStatus.FASTQ_QUEUING:
-        return 'FASTQ Queuing';
-      case AnalysisStatus.FASTQ_ANALYZING:
-        return 'FASTQ Analyzing';
-      case AnalysisStatus.ANALYZING:
-      case AnalysisStatus.VEP_ANALYZED:
-        return 'VCF Analyzing';
-      case AnalysisStatus.ANALYZED:
-        return 'Analyzed';
-      case AnalysisStatus.ERROR:
-      case AnalysisStatus.FASTQ_ERROR:
-        return 'Error';
-      case AnalysisStatus.IMPORTING:
-        return 'Importing';
-      default:
-        return 'Error';
-    }
-  }
+	static getAnalysisStatus(status): string {
+		switch (status) {
+			case AnalysisStatus.QUEUING:
+				return 'VCF Queuing';
+			case AnalysisStatus.FASTQ_QUEUING:
+				return 'FASTQ Queuing';
+			case AnalysisStatus.FASTQ_ANALYZING:
+				return 'FASTQ Analyzing';
+			case AnalysisStatus.ANALYZING:
+			case AnalysisStatus.VEP_ANALYZED:
+				return 'VCF Analyzing';
+			case AnalysisStatus.ANALYZED:
+				return 'Analyzed';
+			case AnalysisStatus.ERROR:
+			case AnalysisStatus.FASTQ_ERROR:
+				return 'Error';
+			case AnalysisStatus.IMPORTING:
+				return 'Importing';
+			default:
+				return 'Error';
+		}
+	}
 }

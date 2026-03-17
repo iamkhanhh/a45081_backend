@@ -7,8 +7,8 @@ import { WorkspacesModule } from '../workspaces/workspaces.module';
 import { SamplesModule } from '../samples/samples.module';
 
 @Module({
-  imports: [UsersModule, AnalysisModule, SamplesModule, WorkspacesModule],
-  controllers: [AccountController],
-  providers: [AccountService],
+	imports: [UsersModule, AnalysisModule, SamplesModule, WorkspacesModule],
+	controllers: [AccountController],
+	providers: [AccountService],
 })
 export class AccountModule {}

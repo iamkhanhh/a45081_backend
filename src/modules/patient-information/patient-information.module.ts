@@ -6,12 +6,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AnalysisModule } from '../analysis/analysis.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([PatientsInformation]),
-    forwardRef(() => AnalysisModule),
-  ],
-  controllers: [PatientInformationController],
-  providers: [PatientsInformationService],
-  exports: [PatientsInformationService],
+	imports: [
+		TypeOrmModule.forFeature([PatientsInformation]),
+		forwardRef(() => AnalysisModule),
+	],
+	controllers: [PatientInformationController],
+	providers: [PatientsInformationService],
+	exports: [PatientsInformationService],
 })
 export class PatientInformationModule {}

@@ -8,14 +8,14 @@ import { UploadsModule } from '../uploads/uploads.module';
 import { PatientInformationModule } from '../patient-information/patient-information.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Samples]),
-    CommonModule,
-    UploadsModule,
-    PatientInformationModule,
-  ],
-  controllers: [SamplesController],
-  providers: [SamplesService],
-  exports: [SamplesService],
+	imports: [
+		TypeOrmModule.forFeature([Samples]),
+		CommonModule,
+		UploadsModule,
+		PatientInformationModule,
+	],
+	controllers: [SamplesController],
+	providers: [SamplesService],
+	exports: [SamplesService],
 })
 export class SamplesModule {}

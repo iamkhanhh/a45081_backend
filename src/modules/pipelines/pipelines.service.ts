@@ -7,94 +7,94 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class PipelinesService {
-  constructor(
-    @InjectRepository(Pipelines)
-    private pipelinesRepository: Repository<Pipelines>,
-  ) {}
+	constructor(
+		@InjectRepository(Pipelines)
+		private pipelinesRepository: Repository<Pipelines>,
+	) {}
 
-  async create(createPipelineDto: CreatePipelineDto) {
-    const pipeline = await this.pipelinesRepository.findOne({
-      where: {
-        name: createPipelineDto.name,
-      },
-    });
-    if (pipeline) {
-      throw new BadRequestException('This pipeline name is already existed!');
-    }
+	async create(createPipelineDto: CreatePipelineDto) {
+		const pipeline = await this.pipelinesRepository.findOne({
+			where: {
+				name: createPipelineDto.name,
+			},
+		});
+		if (pipeline) {
+			throw new BadRequestException('This pipeline name is already existed!');
+		}
 
-    const newPipeline = new Pipelines();
-    newPipeline.name = createPipelineDto.name;
-    newPipeline.version = createPipelineDto.version;
-    newPipeline.is_deleted = 0;
-    const savedPipeline = await this.pipelinesRepository.save(newPipeline);
+		const newPipeline = new Pipelines();
+		newPipeline.name = createPipelineDto.name;
+		newPipeline.version = createPipelineDto.version;
+		newPipeline.is_deleted = 0;
+		const savedPipeline = await this.pipelinesRepository.save(newPipeline);
 
-    return {
-      status: 'success',
-      message: 'Created a pipeline successfully!',
-      data: savedPipeline,
-    };
-  }
+		return {
+			status: 'success',
+			message: 'Created a pipeline successfully!',
+			data: savedPipeline,
+		};
+	}
 
-  async findAll() {
-    const pipelines = await this.pipelinesRepository.find({
-      where: {
-        is_deleted: 0,
-      },
-    });
-    return {
-      status: 'success',
-      message: 'load all pipelines successfully!',
-      data: pipelines,
-    };
-  }
+	async findAll() {
+		const pipelines = await this.pipelinesRepository.find({
+			where: {
+				is_deleted: 0,
+			},
+		});
+		return {
+			status: 'success',
+			message: 'load all pipelines successfully!',
+			data: pipelines,
+		};
+	}
 
-  async findOne(id: number) {
-    const pipeline = await this.pipelinesRepository.findOne({
-      where: {
-        id: id,
-      },
-    });
-    if (!pipeline) {
-      throw new BadRequestException('The pipeline could not be found!');
-    }
-    if (pipeline.is_deleted) {
-      throw new BadRequestException('The pipeline is deleted!');
-    }
+	async findOne(id: number) {
+		const pipeline = await this.pipelinesRepository.findOne({
+			where: {
+				id: id,
+			},
+		});
+		if (!pipeline) {
+			throw new BadRequestException('The pipeline could not be found!');
+		}
+		if (pipeline.is_deleted) {
+			throw new BadRequestException('The pipeline is deleted!');
+		}
 
-    return {
-      status: 'success',
-      message: 'Get pipeline successfully!',
-      data: pipeline,
-    };
-  }
+		return {
+			status: 'success',
+			message: 'Get pipeline successfully!',
+			data: pipeline,
+		};
+	}
 
-  async update(id: number, updatePipelineDto: UpdatePipelineDto) {
-    const pipeline = await this.pipelinesRepository.findOne({ where: { id } });
-    if (!pipeline) {
-      throw new BadRequestException('That pipeline could not be found');
-    }
-    await this.pipelinesRepository.update({ id }, { ...updatePipelineDto });
+	async update(id: number, updatePipelineDto: UpdatePipelineDto) {
+		const pipeline = await this.pipelinesRepository.findOne({ where: { id } });
+		if (!pipeline) {
+			throw new BadRequestException('That pipeline could not be found');
+		}
+		await this.pipelinesRepository.update({ id }, { ...updatePipelineDto });
 
-    return {
-      status: 'success',
-      message: 'Updated pipeline successfully!',
-    };
-  }
+		return {
+			status: 'success',
+			message: 'Updated pipeline successfully!',
+		};
+	}
 
-  async remove(id: number) {
-    const pipeline = await this.pipelinesRepository.findOne({ where: { id } });
-    if (!pipeline) {
-      throw new BadRequestException('That pipeline could not be found');
-    }
-    await this.pipelinesRepository.update({ id }, { is_deleted: 1 });
-    return {
-      status: 'success',
-      message: 'Deleted pipeline successfully!',
-    };
-  }
+	async remove(id: number) {
+		const pipeline = await this.pipelinesRepository.findOne({ where: { id } });
+		if (!pipeline) {
+			throw new BadRequestException('That pipeline could not be found');
+		}
+		await this.pipelinesRepository.update({ id }, { is_deleted: 1 });
+		return {
+			status: 'success',
+			message: 'Deleted pipeline successfully!',
+		};
+	}
 
-  async getPipelineNameFromId(id: number) {
-    const pipelines = await this.pipelinesRepository.findOne({ where: { id } });
-    return pipelines.name;
-  }
+	async getPipelineNameFromId(id: number) {
+		const pipelines = await this.pipelinesRepository.findOne({ where: { id } });
+		return pipelines.name;
+	}
 }

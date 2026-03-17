@@ -3,9 +3,9 @@ import { AbstractEntity } from './abstract.entity';
 
 @Entity()
 export class ChatConversations extends AbstractEntity {
-  @Column()
-  title: string;
+	@Column()
+	title: string;
 
-  @Column()
-  user_id: number;
+	@Column()
+	user_id: number;
 }
