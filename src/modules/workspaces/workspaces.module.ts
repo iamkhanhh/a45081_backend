@@ -10,10 +10,10 @@ import { AnalysisModule } from '../analysis/analysis.module';
   imports: [
     TypeOrmModule.forFeature([Workspaces]),
     PipelinesModule,
-    forwardRef(() => AnalysisModule)
+    forwardRef(() => AnalysisModule),
   ],
   controllers: [WorkspacesController],
   providers: [WorkspacesService],
-  exports: [WorkspacesService]
+  exports: [WorkspacesService],
 })
 export class WorkspacesModule {}

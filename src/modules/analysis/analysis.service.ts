@@ -1,10 +1,15 @@
-import { BadRequestException, forwardRef, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { CreateAnalysisDto } from './dto/create-analysis.dto';
 import { UpdateAnalysisDto } from './dto/update-analysis.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Analysis } from '@/entities';
 import { In, Like, Repository } from 'typeorm';
-import * as dayjs from 'dayjs'
+import * as dayjs from 'dayjs';
 import { PipelinesService } from '../pipelines/pipelines.service';
 import { PaginationProvider } from '@/common/providers/pagination.provider';
 import { AnalysisStatus } from '@/enums';
@@ -18,12 +23,13 @@ import { VariantToReportDto } from '../variants/dto/variant-to-report.dto';
 import { Genes } from '@/entities/genes.entity';
 import { GetGeneDetailDto } from './dto/get-gene-detail.dto';
 import { AnalysisGateway } from '@/common/gateways/analysis.gateway';
+import { createHash } from 'crypto';
 
 @Injectable()
 export class AnalysisService {
-
   constructor(
-    @InjectRepository(Analysis) private analysisRepository: Repository<Analysis>,
+    @InjectRepository(Analysis)
+    private analysisRepository: Repository<Analysis>,
     @InjectRepository(Genes) private genesRepository: Repository<Genes>,
     private readonly pipelinesService: PipelinesService,
     private readonly paginationProvider: PaginationProvider,
@@ -33,12 +39,16 @@ export class AnalysisService {
     private readonly workspacesService: WorkspacesService,
     private readonly configService: ConfigService,
     private readonly s3Provider: S3Provider,
-    private readonly analysisGateway: AnalysisGateway
-  ) { }
+    private readonly analysisGateway: AnalysisGateway,
+  ) {}
 
   async create(createAnalysisDto: CreateAnalysisDto, user_id: number) {
-    let workspace = await this.workspacesService.index(createAnalysisDto.project_id);
-    const uploads = await this.uploadsService.findUploadsBySampleId(createAnalysisDto.sample_id);
+    const workspace = await this.workspacesService.index(
+      createAnalysisDto.project_id,
+    );
+    const uploads = await this.uploadsService.findUploadsBySampleId(
+      createAnalysisDto.sample_id,
+    );
     const newAnalysis = new Analysis();
 
     newAnalysis.name = createAnalysisDto.name;
@@ -60,36 +70,53 @@ export class AnalysisService {
     }
 
     const result = await this.analysisRepository.save(newAnalysis);
-    let igv_local_path = `${this.configService.get<string>('ANALYSIS_FOLDER')}/${user_id}/${result.id}`;
-    await this.analysisRepository.update({ id: result.id }, { igv_local_path, upload_id: uploads[0].id });
+    const igv_local_path = `${this.configService.get<string>('ANALYSIS_FOLDER')}/${user_id}/${result.id}`;
+    await this.analysisRepository.update(
+      { id: result.id },
+      { igv_local_path, upload_id: uploads[0].id },
+    );
 
-    for (let e of uploads) {
-      let destination = `${this.configService.get<string>('ANALYSIS_FOLDER')}/${result.user_id}/${result.id}/${e.upload_name}`;
-      let source = encodeURIComponent(`${this.configService.get<string>('AWS_BUCKET')}/${e.file_path}`);
+    for (const e of uploads) {
+      const destination = `${this.configService.get<string>('ANALYSIS_FOLDER')}/${result.user_id}/${result.id}/${e.upload_name}`;
+      const source = encodeURIComponent(
+        `${this.configService.get<string>('AWS_BUCKET')}/${e.file_path}`,
+      );
 
       await this.s3Provider.copyObject(source, destination);
     }
 
-    await this.workspacesService.update(workspace.data.id, {number: workspace.data.number++});
+    await this.workspacesService.update(workspace.data.id, {
+      number: workspace.data.number++,
+    });
 
     return {
       status: 'success',
-      message: 'Create analysis successfully'
+      message: 'Create analysis successfully',
     };
   }
 
-  async findAll(user_id: number, page: number, pageSize: number, filterAnalysisDto: FilterAnalysisDto) {
+  async findAll(
+    user_id: number,
+    page: number,
+    pageSize: number,
+    filterAnalysisDto: FilterAnalysisDto,
+  ) {
     const filters: any = {
       user_id: user_id,
-      is_deleted: 0
-    }
+      is_deleted: 0,
+    };
 
     if (filterAnalysisDto.status != '') {
       const statusMap = {
         queuing: [AnalysisStatus.QUEUING, AnalysisStatus.FASTQ_QUEUING],
-        analyzing: [AnalysisStatus.ANALYZING, AnalysisStatus.FASTQ_ANALYZING, AnalysisStatus.VEP_ANALYZED, AnalysisStatus.IMPORTING],
+        analyzing: [
+          AnalysisStatus.ANALYZING,
+          AnalysisStatus.FASTQ_ANALYZING,
+          AnalysisStatus.VEP_ANALYZED,
+          AnalysisStatus.IMPORTING,
+        ],
         analyzed: [AnalysisStatus.ANALYZED],
-        error: [AnalysisStatus.ERROR, AnalysisStatus.FASTQ_ERROR]
+        error: [AnalysisStatus.ERROR, AnalysisStatus.FASTQ_ERROR],
       };
 
       const statuses = statusMap[filterAnalysisDto.status.toLowerCase()];
@@ -98,69 +125,81 @@ export class AnalysisService {
       }
     }
     if (filterAnalysisDto.assembly != '') {
-      filters.assembly = filterAnalysisDto.assembly
+      filters.assembly = filterAnalysisDto.assembly;
     }
     if (filterAnalysisDto.analysisName != '') {
-      filters.name = Like(`%${filterAnalysisDto.analysisName}%`)
+      filters.name = Like(`%${filterAnalysisDto.analysisName}%`);
     }
 
-    const results = await this.paginationProvider.paginate(page, pageSize, this.analysisRepository, filters);
+    const results = await this.paginationProvider.paginate(
+      page,
+      pageSize,
+      this.analysisRepository,
+      filters,
+    );
 
-    const data = await Promise.all(results.data.map(async (analysis) => {
-      const createdAt = dayjs(analysis.createdAt).format('DD/MM/YYYY');
-      const analyzed = analysis.analyzed ? dayjs(analysis.analyzed).format('DD/MM/YYYY') : '';
-      const workspaceName = await this.workspacesService.getWorkspaceName(analysis.project_id);
-      return {
-        id: analysis.id,
-        name: analysis.name,
-        workspaceName: workspaceName ? workspaceName.data : '',
-        createdAt: createdAt,
-        analyzed: analyzed,
-        variants: analysis.variants,
-        assembly: analysis.assembly,
-        status: Analysis.getAnalysisStatus(analysis.status),
-      }
-    }));
+    const data = await Promise.all(
+      results.data.map(async (analysis) => {
+        const createdAt = dayjs(analysis.createdAt).format('DD/MM/YYYY');
+        const analyzed = analysis.analyzed
+          ? dayjs(analysis.analyzed).format('DD/MM/YYYY')
+          : '';
+        const workspaceName = await this.workspacesService.getWorkspaceName(
+          analysis.project_id,
+        );
+        return {
+          id: analysis.id,
+          name: analysis.name,
+          workspaceName: workspaceName ? workspaceName.data : '',
+          createdAt: createdAt,
+          analyzed: analyzed,
+          variants: analysis.variants,
+          assembly: analysis.assembly,
+          status: Analysis.getAnalysisStatus(analysis.status),
+        };
+      }),
+    );
 
     return {
       ...results,
       data,
-      message: 'List all analyses successfully!'
+      message: 'List all analyses successfully!',
     };
   }
 
   async findOne(id: number) {
     const analysis = await this.analysisRepository.findOne({ where: { id } });
     if (!analysis) {
-      throw new BadRequestException('That analysis could not be found')
+      throw new BadRequestException('That analysis could not be found');
     }
-    let sample = await this.samplesService.findOne(analysis.sample_id);
+    const sample = await this.samplesService.findOne(analysis.sample_id);
 
     return {
       status: 'success',
       message: 'got analysis successfully!',
       data: {
         ...analysis,
-        sampleName: sample.data.name
-      }
+        sampleName: sample.data.name,
+      },
     };
   }
 
   async getTotal(user_id: number) {
-    const analyses = await this.analysisRepository.find({ where: { user_id: user_id, is_deleted: 0 } });
+    const analyses = await this.analysisRepository.find({
+      where: { user_id: user_id, is_deleted: 0 },
+    });
     return analyses.length;
   }
 
   async getAnalysesStatistics(user_id: number, lastSixMonthsNumbers: number[]) {
-    let data = [];
+    const data = [];
 
     const now = new Date();
-    let currentYear = now.getFullYear();
+    const currentYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1;
 
-    for (let month of lastSixMonthsNumbers) {
-
-      let year = month > currentMonth ? currentYear - 1 : currentYear;
+    for (const month of lastSixMonthsNumbers) {
+      const year = month > currentMonth ? currentYear - 1 : currentYear;
 
       const results = await this.analysisRepository
         .createQueryBuilder('analysis')
@@ -179,63 +218,82 @@ export class AnalysisService {
     const analyses = await this.analysisRepository.find({
       where: { user_id: user_id, is_deleted: 0 },
       order: { createdAt: 'DESC' },
-      take: 10
+      take: 10,
     });
 
-    const data = await Promise.all(analyses.map(async (analysis) => {
-      const createdAt = dayjs(analysis.createdAt).format('DD/MM/YYYY');
-      const analyzed = analysis.analyzed ? dayjs(analysis.analyzed).format('DD/MM/YYYY') : '';
-      const workspaceName = await this.workspacesService.getWorkspaceName(analysis.project_id);
-      return {
-        id: analysis.id,
-        name: analysis.name,
-        workspaceName: workspaceName ? workspaceName.data : '',
-        createdAt: createdAt,
-        analyzed: analyzed,
-        variants: analysis.variants,
-        assembly: analysis.assembly,
-        status: Analysis.getAnalysisStatus(analysis.status),
-      }
-    }));
-    
+    const data = await Promise.all(
+      analyses.map(async (analysis) => {
+        const createdAt = dayjs(analysis.createdAt).format('DD/MM/YYYY');
+        const analyzed = analysis.analyzed
+          ? dayjs(analysis.analyzed).format('DD/MM/YYYY')
+          : '';
+        const workspaceName = await this.workspacesService.getWorkspaceName(
+          analysis.project_id,
+        );
+        return {
+          id: analysis.id,
+          name: analysis.name,
+          workspaceName: workspaceName ? workspaceName.data : '',
+          createdAt: createdAt,
+          analyzed: analyzed,
+          variants: analysis.variants,
+          assembly: analysis.assembly,
+          status: Analysis.getAnalysisStatus(analysis.status),
+        };
+      }),
+    );
+
     return data;
   }
 
   async getGeneDetail(getGeneDetailDto: GetGeneDetailDto) {
     try {
-      const gene = await this.genesRepository.findOne({ where: { name: getGeneDetailDto.geneName } });
+      const gene = await this.genesRepository.findOne({
+        where: { name: getGeneDetailDto.geneName },
+      });
 
-      let geneInfo = {
+      const geneInfo = {
         synonyms: gene.name,
-        full_name: gene ? gene.full_name : "",
-        function: gene ? gene.summary : ""
-      }
+        full_name: gene ? gene.full_name : '',
+        function: gene ? gene.summary : '',
+      };
 
       return {
-        status: "success",
-        message: "Get gene detail successfully",
-        data: geneInfo
-      }
+        status: 'success',
+        message: 'Get gene detail successfully',
+        data: geneInfo,
+      };
     } catch (error) {
       console.log('AnalysisService@getGeneDetail: ', error);
 
-      return { status: "error" }
+      return { status: 'error' };
     }
   }
 
-  async getAnalysesByWorkspaceId(workspace_id: number, user_id: number, page: number, pageSize: number, filterAnalysisDto: FilterAnalysisDto) {
+  async getAnalysesByWorkspaceId(
+    workspace_id: number,
+    user_id: number,
+    page: number,
+    pageSize: number,
+    filterAnalysisDto: FilterAnalysisDto,
+  ) {
     const filters: any = {
       project_id: workspace_id,
       user_id: user_id,
-      is_deleted: 0
-    }
+      is_deleted: 0,
+    };
 
     if (filterAnalysisDto.status != '') {
       const statusMap = {
         queuing: [AnalysisStatus.QUEUING, AnalysisStatus.FASTQ_QUEUING],
-        analyzing: [AnalysisStatus.ANALYZING, AnalysisStatus.FASTQ_ANALYZING, AnalysisStatus.VEP_ANALYZED, AnalysisStatus.IMPORTING],
+        analyzing: [
+          AnalysisStatus.ANALYZING,
+          AnalysisStatus.FASTQ_ANALYZING,
+          AnalysisStatus.VEP_ANALYZED,
+          AnalysisStatus.IMPORTING,
+        ],
         analyzed: [AnalysisStatus.ANALYZED],
-        error: [AnalysisStatus.ERROR, AnalysisStatus.FASTQ_ERROR]
+        error: [AnalysisStatus.ERROR, AnalysisStatus.FASTQ_ERROR],
       };
 
       const statuses = statusMap[filterAnalysisDto.status.toLowerCase()];
@@ -244,100 +302,189 @@ export class AnalysisService {
       }
     }
     if (filterAnalysisDto.assembly != '') {
-      filters.assembly = filterAnalysisDto.assembly
+      filters.assembly = filterAnalysisDto.assembly;
     }
     if (filterAnalysisDto.analysisName != '') {
-      filters.name = Like(`%${filterAnalysisDto.analysisName}%`)
+      filters.name = Like(`%${filterAnalysisDto.analysisName}%`);
     }
     if (filterAnalysisDto.sampleName != '') {
-      const temp = await this.samplesService.getSamplesBySampleName(filterAnalysisDto.sampleName);
+      const temp = await this.samplesService.getSamplesBySampleName(
+        filterAnalysisDto.sampleName,
+      );
       filters.sample_id = In(temp);
     }
 
-    const results = await this.paginationProvider.paginate(page, pageSize, this.analysisRepository, filters);
+    const results = await this.paginationProvider.paginate(
+      page,
+      pageSize,
+      this.analysisRepository,
+      filters,
+    );
 
-    const data = await Promise.all(results.data.map(async (analysis) => {
-      const pipeline_name = await this.pipelinesService.getPipelineNameFromId(analysis.pipeline_id);
-      const createdAt = dayjs(analysis.createdAt).format('DD/MM/YYYY');
-      const updatedAt = dayjs(analysis.updatedAt).format('DD/MM/YYYY');
-      const analyzed = analysis.analyzed ? dayjs(analysis.analyzed).format('DD/MM/YYYY') : '';
-      return {
-        id: analysis.id,
-        name: analysis.name,
-        pipeline_name: pipeline_name,
-        createdAt: createdAt,
-        updatedAt: updatedAt,
-        analyzed: analyzed,
-        variants: analysis.variants,
-        assembly: analysis.assembly,
-        sequencing_type: analysis.sequencing_type,
-        status: Analysis.getAnalysisStatus(analysis.status),
-      }
-    }));
+    const data = await Promise.all(
+      results.data.map(async (analysis) => {
+        const pipeline_name = await this.pipelinesService.getPipelineNameFromId(
+          analysis.pipeline_id,
+        );
+        const createdAt = dayjs(analysis.createdAt).format('DD/MM/YYYY');
+        const updatedAt = dayjs(analysis.updatedAt).format('DD/MM/YYYY');
+        const analyzed = analysis.analyzed
+          ? dayjs(analysis.analyzed).format('DD/MM/YYYY')
+          : '';
+        return {
+          id: analysis.id,
+          name: analysis.name,
+          pipeline_name: pipeline_name,
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          analyzed: analyzed,
+          variants: analysis.variants,
+          assembly: analysis.assembly,
+          sequencing_type: analysis.sequencing_type,
+          status: Analysis.getAnalysisStatus(analysis.status),
+        };
+      }),
+    );
 
     return {
       ...results,
       data,
-      message: 'List all analyses successfully!'
+      message: 'List all analyses successfully!',
     };
   }
 
   async deleteAnalysesByWorkspaceId(workspace_id: number) {
-    return await this.analysisRepository.update({ project_id: workspace_id }, { is_deleted: 1 });
+    return await this.analysisRepository.update(
+      { project_id: workspace_id },
+      { is_deleted: 1 },
+    );
   }
 
   async update(id: number, updateAnalysisDto: UpdateAnalysisDto) {
     const analysis = await this.analysisRepository.findOne({ where: { id } });
     if (!analysis) {
-      throw new BadRequestException('That analysis could not be found')
+      throw new BadRequestException('That analysis could not be found');
     }
     await this.analysisRepository.update({ id }, { ...updateAnalysisDto });
 
     return {
       status: 'success',
-      message: 'Updated successfully!'
-    }
+      message: 'Updated successfully!',
+    };
   }
 
   async getQCVCF(id: number) {
     const analysis = await this.analysisRepository.findOne({ where: { id } });
     if (!analysis) {
-      throw new BadRequestException('That analysis could not be found')
+      throw new BadRequestException('That analysis could not be found');
     }
 
-    let file_path = 'http://s3.amazonaws.com/vcf.files/ExAC.r0.2.sites.vep.vcf.gz'
-    let tbi_path = ''
-    let genome_build = analysis.assembly == 'hg19' ? 'GRCh37' : 'GRCh38'
+    const file_path =
+      'http://s3.amazonaws.com/vcf.files/ExAC.r0.2.sites.vep.vcf.gz';
+    const tbi_path = '';
+    const genome_build = analysis.assembly == 'hg19' ? 'GRCh37' : 'GRCh38';
 
     return {
-      status: "success",
-      message: "Get QC URL successfully",
-      data: `${this.configService.get<string>('VCF_IOBIO_HOST')}/?species=Human&build=${genome_build}&vcf=${file_path}&tbi=${tbi_path}`
+      status: 'success',
+      message: 'Get QC URL successfully',
+      data: `${this.configService.get<string>('VCF_IOBIO_HOST')}/?species=Human&build=${genome_build}&vcf=${file_path}&tbi=${tbi_path}`,
+    };
+  }
+
+  async getIGVInfo(id: number, ip: string) {
+    const normalizedIp = ip === '::1' ? '127.0.0.1' : ip.replace('::ffff:', '');
+
+    const analysis = await this.analysisRepository.findOne({ where: { id } });
+    if (!analysis) {
+      throw new BadRequestException('That analysis could not be found');
     }
+
+    const folderName = analysis.igv_local_path;
+
+    return {
+      status: 'success',
+      message: 'Get QC URL successfully',
+      data: {
+        bamUrl: this.getIgvLink(`${folderName}/analysis.bam`, normalizedIp),
+        bamIndexUrl: this.getIgvLink(
+          `${folderName}/analysis.bam.bai`,
+          normalizedIp,
+        ),
+        fastaUrl: analysis.assembly == 'hg19' ? 'GRCh37' : 'GRCh38',
+        fastaIndexUrl: analysis.assembly == 'hg19' ? 'GRCh37' : 'GRCh38',
+        geneUrl: analysis.assembly == 'hg19' ? 'GRCh37' : 'GRCh38',
+      },
+    };
+  }
+
+  getIgvLink(uri, client_ip) {
+    if (!uri || !client_ip) {
+      console.log('AnalysisService@getIgvLink: IP address undefined');
+      return undefined;
+    }
+
+    const url = this.configService.get<string>('IGV_HOST');
+    if (url == '') {
+      console.log('AnalysisService@getIgvLink: IGV host undefined');
+      return undefined;
+    }
+
+    uri = '/' + uri;
+
+    const secret = 'itisawsomekey1599';
+
+    const today = new Date();
+    const minute_exist = today.getMinutes() + 30;
+    const expires = Math.round(
+      new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate(),
+        today.getHours(),
+        minute_exist,
+        today.getSeconds(),
+      ).getTime() / 1000,
+    );
+    const input = uri + client_ip + expires + ' ' + secret;
+    const base64Value = createHash('md5').update(input).digest('base64');
+    const result =
+      url +
+      uri +
+      '?' +
+      'signatures=' +
+      base64Value.replace(/\+/g, '-').replace(/\//g, '_').replace(/\=/g, '') +
+      '&expires=' +
+      expires;
+
+    console.log(result);
+    return result;
   }
 
   async updateVariantsSelected(id: number, arr: VariantToReportDto[]) {
     const analysis = await this.analysisRepository.findOne({ where: { id } });
     if (!analysis) {
-      throw new BadRequestException('That analysis could not be found')
+      throw new BadRequestException('That analysis could not be found');
     }
-    await this.analysisRepository.update({ id }, { variants_to_report: JSON.stringify(arr) });
+    await this.analysisRepository.update(
+      { id },
+      { variants_to_report: JSON.stringify(arr) },
+    );
 
     return {
       status: 'success',
-      message: 'Updated variants selected successfully!'
-    }
+      message: 'Updated variants selected successfully!',
+    };
   }
 
   async remove(id: number) {
     const analysis = await this.analysisRepository.findOne({ where: { id } });
     if (!analysis) {
-      throw new BadRequestException('That analysis could not be found')
+      throw new BadRequestException('That analysis could not be found');
     }
     await this.analysisRepository.update({ id }, { is_deleted: 1 });
     return {
       status: 'success',
-      message: 'Deleted successfully!'
+      message: 'Deleted successfully!',
     };
   }
 
@@ -347,22 +494,27 @@ export class AnalysisService {
       where: {
         status: AnalysisStatus.QUEUING,
         is_deleted: 0,
-        assembly: assembly
+        assembly: assembly,
       },
       order: {
-        createdAt: 'ASC'
+        createdAt: 'ASC',
       },
-    })
+    });
     if (analyses.length === 0) {
-      return data
+      return data;
     }
 
     data = analyses[0];
-    const uploads = await this.uploadsService.findUploadsBySampleId(data.sample_id);
+    const uploads = await this.uploadsService.findUploadsBySampleId(
+      data.sample_id,
+    );
     data.upload = uploads[0];
 
-    let destination = `${this.configService.get<string>('ANALYSIS_FOLDER')}/${data.user_id}/${data.id}/analysis.anno`;
-    await this.analysisRepository.update({ id: analyses[0].id }, { file_path: destination });
+    const destination = `${this.configService.get<string>('ANALYSIS_FOLDER')}/${data.user_id}/${data.id}/analysis.anno`;
+    await this.analysisRepository.update(
+      { id: analyses[0].id },
+      { file_path: destination },
+    );
 
     return data;
   }
@@ -372,19 +524,21 @@ export class AnalysisService {
     const analyses = await this.analysisRepository.find({
       where: {
         status: AnalysisStatus.FASTQ_QUEUING,
-        is_deleted: 0
+        is_deleted: 0,
       },
       order: {
-        createdAt: 'ASC'
+        createdAt: 'ASC',
       },
-    })
+    });
     if (analyses.length === 0) {
-      return data
+      return data;
     }
 
     data = analyses[0];
-    const uploads = await this.uploadsService.findUploadsBySampleId(data.sample_id);
-    for (let e of uploads) {
+    const uploads = await this.uploadsService.findUploadsBySampleId(
+      data.sample_id,
+    );
+    for (const e of uploads) {
       if (e.fastq_pair_index == 1) {
         data.fastq1 = e;
       } else if (e.fastq_pair_index == 2) {
@@ -399,7 +553,9 @@ export class AnalysisService {
   }
 
   async updateAnalysisStatus(analysisId: number, status: AnalysisStatus) {
-    const analysis = await this.analysisRepository.findOne({ where: { id: analysisId } });
+    const analysis = await this.analysisRepository.findOne({
+      where: { id: analysisId },
+    });
     if (!analysis) {
       throw new BadRequestException('That analysis could not be found');
     }
@@ -413,26 +569,55 @@ export class AnalysisService {
 
     this.analysisGateway.sendAnalysisStatusUpdate({
       id: analysis.id,
-      status: Analysis.getAnalysisStatus(analysis.status)
+      status: Analysis.getAnalysisStatus(analysis.status),
     });
 
     return {
       status: 'success',
-      message: 'Analysis status updated successfully'
+      message: 'Analysis status updated successfully',
     };
   }
 
   async getAnalysisStaticsByStatus(user_id: number) {
-    const queuing = await this.analysisRepository.count({ where: { user_id: user_id, is_deleted: 0, status: In([AnalysisStatus.QUEUING, AnalysisStatus.FASTQ_QUEUING]) } });
-    const analyzing = await this.analysisRepository.count({ where: { user_id: user_id, is_deleted: 0, status: In([AnalysisStatus.ANALYZING, AnalysisStatus.FASTQ_ANALYZING, AnalysisStatus.VEP_ANALYZED, AnalysisStatus.IMPORTING]) } });
-    const analyzed = await this.analysisRepository.count({ where: { user_id: user_id, is_deleted: 0, status: AnalysisStatus.ANALYZED } });
-    const error = await this.analysisRepository.count({ where: { user_id: user_id, is_deleted: 0, status: In([AnalysisStatus.ERROR, AnalysisStatus.FASTQ_ERROR]) } });
+    const queuing = await this.analysisRepository.count({
+      where: {
+        user_id: user_id,
+        is_deleted: 0,
+        status: In([AnalysisStatus.QUEUING, AnalysisStatus.FASTQ_QUEUING]),
+      },
+    });
+    const analyzing = await this.analysisRepository.count({
+      where: {
+        user_id: user_id,
+        is_deleted: 0,
+        status: In([
+          AnalysisStatus.ANALYZING,
+          AnalysisStatus.FASTQ_ANALYZING,
+          AnalysisStatus.VEP_ANALYZED,
+          AnalysisStatus.IMPORTING,
+        ]),
+      },
+    });
+    const analyzed = await this.analysisRepository.count({
+      where: {
+        user_id: user_id,
+        is_deleted: 0,
+        status: AnalysisStatus.ANALYZED,
+      },
+    });
+    const error = await this.analysisRepository.count({
+      where: {
+        user_id: user_id,
+        is_deleted: 0,
+        status: In([AnalysisStatus.ERROR, AnalysisStatus.FASTQ_ERROR]),
+      },
+    });
 
     return {
       queuing,
       analyzing,
       analyzed,
-      error
+      error,
     };
   }
 }

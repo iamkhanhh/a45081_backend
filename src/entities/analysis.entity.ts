@@ -1,9 +1,9 @@
 import { AnalysisSequencingType, AnalysisStatus } from '@/enums';
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, Column } from 'typeorm';
 import { AbstractEntity } from './abstract.entity';
 
 @Entity()
-export class Analysis extends AbstractEntity{
+export class Analysis extends AbstractEntity {
   @Column()
   name: string;
 
@@ -14,7 +14,7 @@ export class Analysis extends AbstractEntity{
   sequencing_type: AnalysisSequencingType;
 
   @Column({
-    nullable: true
+    nullable: true,
   })
   igv_local_path: string;
 
@@ -39,19 +39,19 @@ export class Analysis extends AbstractEntity{
   @Column()
   status: number;
 
-  @Column({ type: 'text'})
+  @Column({ type: 'text' })
   variants_to_report: string;
 
   @Column()
   file_path: string;
 
-  @Column({ type: 'text'})
+  @Column({ type: 'text' })
   description: string;
 
-  @Column({default: 0})
+  @Column({ default: 0 })
   is_deleted: number;
 
-  @Column({ nullable: true})
+  @Column({ nullable: true })
   pipeline_id: number;
 
   @Column()
@@ -61,25 +61,25 @@ export class Analysis extends AbstractEntity{
   assembly: string;
 
   static getAnalysisStatus(status): string {
-		switch(status) {
-			case AnalysisStatus.QUEUING: 
-        return 'VCF Queuing'
-			case AnalysisStatus.FASTQ_QUEUING: 
-				return 'FASTQ Queuing'
+    switch (status) {
+      case AnalysisStatus.QUEUING:
+        return 'VCF Queuing';
+      case AnalysisStatus.FASTQ_QUEUING:
+        return 'FASTQ Queuing';
       case AnalysisStatus.FASTQ_ANALYZING:
-        return 'FASTQ Analyzing'
-			case AnalysisStatus.ANALYZING:
-			case AnalysisStatus.VEP_ANALYZED:
-				return 'VCF Analyzing'
-			case AnalysisStatus.ANALYZED:
-				return 'Analyzed'
-			case AnalysisStatus.ERROR:
-			case AnalysisStatus.FASTQ_ERROR:
-				return 'Error';
+        return 'FASTQ Analyzing';
+      case AnalysisStatus.ANALYZING:
+      case AnalysisStatus.VEP_ANALYZED:
+        return 'VCF Analyzing';
+      case AnalysisStatus.ANALYZED:
+        return 'Analyzed';
+      case AnalysisStatus.ERROR:
+      case AnalysisStatus.FASTQ_ERROR:
+        return 'Error';
       case AnalysisStatus.IMPORTING:
         return 'Importing';
-			default:
-				return 'Error'
-		}
-	}
+      default:
+        return 'Error';
+    }
+  }
 }

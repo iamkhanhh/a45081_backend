@@ -8,7 +8,18 @@ import { APP_GUARD } from '@nestjs/core';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Analysis, GeneClinicalSynopsis, PatientsInformation, Pipelines, Samples, Uploads, Users, Workspaces, Genes, Report } from './entities';
+import {
+  Analysis,
+  GeneClinicalSynopsis,
+  PatientsInformation,
+  Pipelines,
+  Samples,
+  Uploads,
+  Users,
+  Workspaces,
+  Genes,
+  Report,
+} from './entities';
 import { AuthGuard } from './auth/passport/auth.guard';
 import { PipelinesModule } from './modules/pipelines/pipelines.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
@@ -36,7 +47,7 @@ const ENV = process.env.NODE_ENV || 'development';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env.' + ENV,
-      validationSchema: environmentValidation
+      validationSchema: environmentValidation,
     }),
     AuthModule,
     PipelinesModule,
@@ -66,7 +77,7 @@ const ENV = process.env.NODE_ENV || 'development';
           options: {
             strict: true,
           },
-        }
+        },
       }),
       inject: [ConfigService],
     }),
@@ -79,7 +90,19 @@ const ENV = process.env.NODE_ENV || 'development';
         username: configService.get('DB_USERNAME'),
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_DATABASE'),
-        entities: [Analysis, GeneClinicalSynopsis, PatientsInformation, Pipelines, Samples, Uploads, Users, Workspaces, Genes, ChatConversations, Report],
+        entities: [
+          Analysis,
+          GeneClinicalSynopsis,
+          PatientsInformation,
+          Pipelines,
+          Samples,
+          Uploads,
+          Users,
+          Workspaces,
+          Genes,
+          ChatConversations,
+          Report,
+        ],
         synchronize: false,
       }),
       inject: [ConfigService],
@@ -92,7 +115,7 @@ const ENV = process.env.NODE_ENV || 'development';
     VariantCallingModule,
     ChatbotModule,
     SearchModule,
-    ReportModule
+    ReportModule,
   ],
   controllers: [AppController],
   providers: [
@@ -103,4 +126,4 @@ const ENV = process.env.NODE_ENV || 'development';
     },
   ],
 })
-export class AppModule { }
+export class AppModule {}

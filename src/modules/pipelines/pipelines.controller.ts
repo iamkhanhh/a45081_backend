@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { PipelinesService } from './pipelines.service';
 import { CreatePipelineDto } from './dto/create-pipeline.dto';
@@ -38,7 +47,10 @@ export class PipelinesController {
   @ApiParam({ name: 'id', example: 1, description: 'Pipeline ID' })
   @ApiResponse({ status: 200, description: 'Pipeline updated successfully' })
   @ApiResponse({ status: 404, description: 'Pipeline not found' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() updatePipelineDto: UpdatePipelineDto) {
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updatePipelineDto: UpdatePipelineDto,
+  ) {
     return this.pipelinesService.update(id, updatePipelineDto);
   }
 

@@ -1,5 +1,23 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseIntPipe, DefaultValuePipe, Request } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  ParseIntPipe,
+  DefaultValuePipe,
+  Request,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -15,22 +33,23 @@ export class UsersController {
   @ApiOperation({ summary: 'Create a new user' })
   @ApiResponse({ status: 201, description: 'User created successfully' })
   @ApiResponse({ status: 400, description: 'Bad request' })
-  create(
-    @Body() createUserDto: CreateUserDto,
-    @Request() req
-  ) {
+  create(@Body() createUserDto: CreateUserDto, @Request() req) {
     return this.usersService.create(createUserDto, req.user.id);
   }
 
   @Post('load-users')
   @ApiOperation({ summary: 'Get all users with pagination and filters' })
   @ApiQuery({ name: 'page', example: 1, description: 'Page number' })
-  @ApiQuery({ name: 'pageSize', example: 10, description: 'Number of items per page' })
+  @ApiQuery({
+    name: 'pageSize',
+    example: 10,
+    description: 'Number of items per page',
+  })
   @ApiResponse({ status: 200, description: 'Users retrieved successfully' })
   findAll(
     @Query('page', ParseIntPipe, new DefaultValuePipe(1)) page: number,
     @Query('pageSize', ParseIntPipe, new DefaultValuePipe(10)) pageSize: number,
-    @Body() filterUsersDto: FilterUsersDto
+    @Body() filterUsersDto: FilterUsersDto,
   ) {
     return this.usersService.findAll(page, pageSize, filterUsersDto);
   }
@@ -55,9 +74,7 @@ export class UsersController {
   @Delete('multiple-user')
   @ApiOperation({ summary: 'Delete multiple users' })
   @ApiResponse({ status: 200, description: 'Users deleted successfully' })
-  removeMultipleUsers(
-    @Body() deleteMultipleUsersDto: DeleteMultipleUsersDto
-  ) {
+  removeMultipleUsers(@Body() deleteMultipleUsersDto: DeleteMultipleUsersDto) {
     return this.usersService.removeMultipleUsers(deleteMultipleUsersDto);
   }
 

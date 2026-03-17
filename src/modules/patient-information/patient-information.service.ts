@@ -1,4 +1,9 @@
-import { BadRequestException, forwardRef, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { CreatePatientInformationDto } from './dto/create-patient-information.dto';
 import { UpdatePatientInformationDto } from './dto/update-patient-information.dto';
 import { PatientsInformation } from '@/entities';
@@ -9,15 +14,15 @@ import * as dayjs from 'dayjs';
 
 @Injectable()
 export class PatientsInformationService {
-
   constructor(
-    @InjectRepository(PatientsInformation) private patientInformationRepository: Repository<PatientsInformation>,
+    @InjectRepository(PatientsInformation)
+    private patientInformationRepository: Repository<PatientsInformation>,
     @Inject(forwardRef(() => AnalysisService))
-    private readonly analysisService: AnalysisService
+    private readonly analysisService: AnalysisService,
   ) {}
 
   async create(createPatientInformationDto: CreatePatientInformationDto) {
-    let new_patient = new PatientsInformation();
+    const new_patient = new PatientsInformation();
 
     new_patient.first_name = createPatientInformationDto.first_name;
     new_patient.last_name = createPatientInformationDto.last_name;
@@ -34,26 +39,31 @@ export class PatientsInformationService {
 
   async findOne(analysis_id: number) {
     const temp = await this.analysisService.findOne(analysis_id);
-    let analysis = temp.data;
+    const analysis = temp.data;
 
-    const patient =  await this.patientInformationRepository.findOne({ where: { sample_id: analysis.sample_id } });
+    const patient = await this.patientInformationRepository.findOne({
+      where: { sample_id: analysis.sample_id },
+    });
     if (!patient) {
-      throw new BadRequestException('The patient could not be found')
+      throw new BadRequestException('The patient could not be found');
     }
 
     return {
-      status: "success",
-      message: "Get patient information successfully",
+      status: 'success',
+      message: 'Get patient information successfully',
       data: {
         ...patient,
         createdAt: dayjs(patient.createdAt).format('DD/MM/YYYY'),
         dob: dayjs(patient.dob).format('YYYY/MM/DD'),
         sample_name: analysis.sampleName,
-      }
-    }
+      },
+    };
   }
 
-  async update(id: number, updatePatientInformationDto: UpdatePatientInformationDto) {
+  async update(
+    id: number,
+    updatePatientInformationDto: UpdatePatientInformationDto,
+  ) {
     try {
       await this.patientInformationRepository.update(id, {
         first_name: updatePatientInformationDto.first_name,
@@ -62,12 +72,12 @@ export class PatientsInformationService {
         phenotype: updatePatientInformationDto.phenotype,
         ethnicity: updatePatientInformationDto.ethnicity,
         sample_type: updatePatientInformationDto.sample_type,
-        gender: updatePatientInformationDto.gender
+        gender: updatePatientInformationDto.gender,
       });
       return {
-        status: "success",
-        message: "Patient information updated successfully"
-      }
+        status: 'success',
+        message: 'Patient information updated successfully',
+      };
     } catch (error) {
       console.log('PatientsInformationService@update', error);
       throw new BadRequestException('The patient could not be updated');

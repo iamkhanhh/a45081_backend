@@ -1,4 +1,4 @@
-import { forwardRef, Global, Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { PaginationProvider } from './providers/pagination.provider';
 import { HashingPasswordProvider } from './providers/hashing-password.provider';
 import { S3Provider } from './providers/s3.provider';
@@ -11,9 +11,7 @@ import { AnalysisGateway } from './gateways/analysis.gateway';
 
 @Global()
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Analysis]),
-  ],
+  imports: [TypeOrmModule.forFeature([Analysis])],
   providers: [
     PaginationProvider,
     HashingPasswordProvider,
@@ -21,7 +19,7 @@ import { AnalysisGateway } from './gateways/analysis.gateway';
     MongodbProvider,
     SampleImportProvider,
     CommonProvider,
-    AnalysisGateway
+    AnalysisGateway,
   ],
   exports: [
     PaginationProvider,
@@ -29,7 +27,7 @@ import { AnalysisGateway } from './gateways/analysis.gateway';
     S3Provider,
     MongodbProvider,
     CommonProvider,
-    AnalysisGateway
-  ]
+    AnalysisGateway,
+  ],
 })
 export class CommonModule {}

@@ -4,35 +4,33 @@ import { AnalysisService } from '../analysis/analysis.service';
 
 @Injectable()
 export class VariantCallingService {
-    constructor(
-        private readonly analysisService: AnalysisService,
-    ) { }
+  constructor(private readonly analysisService: AnalysisService) {}
 
-    async getPendingAnalysis() {
-        let analysis = await this.analysisService.getPendingFastqAnalysis();
+  async getPendingAnalysis() {
+    const analysis = await this.analysisService.getPendingFastqAnalysis();
 
-        return {
-            status: 'success',
-            message: 'Pending analysis retrieved successfully',
-            data: analysis
-        }
+    return {
+      status: 'success',
+      message: 'Pending analysis retrieved successfully',
+      data: analysis,
+    };
+  }
+
+  async updateAnalysisStatus(updateAnalysisStatusDto: UpdateAnalysisStatusDto) {
+    const { analysisId, status } = updateAnalysisStatusDto;
+
+    if (!analysisId || status === undefined || status === null) {
+      return {
+        status: 'error',
+        message: 'Invalid analysis ID or status',
+      };
     }
 
-    async updateAnalysisStatus(updateAnalysisStatusDto: UpdateAnalysisStatusDto) {
-        const { analysisId, status } = updateAnalysisStatusDto;
+    await this.analysisService.updateAnalysisStatus(analysisId, status);
 
-        if (!analysisId || status === undefined || status === null) {
-            return {
-                status: 'error',
-                message: 'Invalid analysis ID or status'
-            };
-        }
-
-        await this.analysisService.updateAnalysisStatus(analysisId, status);
-
-        return {
-            status: 'success',
-            message: 'Analysis status updated successfully'
-        }
-    }
+    return {
+      status: 'success',
+      message: 'Analysis status updated successfully',
+    };
+  }
 }

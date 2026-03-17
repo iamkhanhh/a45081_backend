@@ -1,8 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, Column } from 'typeorm';
 import { AbstractEntity } from './abstract.entity';
 
 @Entity()
-export class Samples extends AbstractEntity{
+export class Samples extends AbstractEntity {
   @Column()
   name: string;
 
@@ -22,13 +22,13 @@ export class Samples extends AbstractEntity{
   assembly: string;
 
   static getSampleStatus(status: number): string {
-		switch (status) {
-			case 0:
-				return 'Incomplete'
-			case 1:
-				return 'Completed'
-			default:
-				return 'N/A'
-		}
+    switch (status) {
+      case 0:
+        return 'Incomplete';
+      case 1:
+        return 'Completed';
+      default:
+        return 'N/A';
+    }
   }
 }

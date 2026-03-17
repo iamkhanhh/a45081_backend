@@ -11,28 +11,31 @@ export class AccountController {
 
   @Get('account-statistics')
   @ApiOperation({ summary: 'Get account statistics' })
-  @ApiResponse({ status: 200, description: 'Account statistics retrieved successfully' })
-  getAccountStatistics(
-    @Request() req,
-  ) {
+  @ApiResponse({
+    status: 200,
+    description: 'Account statistics retrieved successfully',
+  })
+  getAccountStatistics(@Request() req) {
     return this.accountService.getAccountStatistics(req.user.id);
   }
 
   @Get('dashboard')
   @ApiOperation({ summary: 'Get account dashboard' })
-  @ApiResponse({ status: 200, description: 'Account dashboard retrieved successfully' })
-  getAccountDashboard(
-    @Request() req,
-  ) {
+  @ApiResponse({
+    status: 200,
+    description: 'Account dashboard retrieved successfully',
+  })
+  getAccountDashboard(@Request() req) {
     return this.accountService.getAccountDashboard(req.user.id);
   }
 
   @Get()
   @ApiOperation({ summary: 'Get current account information' })
-  @ApiResponse({ status: 200, description: 'Account information retrieved successfully' })
-  getAccount(
-    @Request() req,
-  ) {
+  @ApiResponse({
+    status: 200,
+    description: 'Account information retrieved successfully',
+  })
+  getAccount(@Request() req) {
     return this.accountService.getAccount(req.user.id);
   }
 
@@ -40,10 +43,7 @@ export class AccountController {
   @ApiOperation({ summary: 'Update account password' })
   @ApiResponse({ status: 200, description: 'Password updated successfully' })
   @ApiResponse({ status: 400, description: 'Bad request' })
-  updatePassword(
-    @Request() req,
-    @Body() updatePasswordDto: UpdatePasswordDto
-  ) {
+  updatePassword(@Request() req, @Body() updatePasswordDto: UpdatePasswordDto) {
     return this.accountService.updatePassword(req.user.id, updatePasswordDto);
   }
 
@@ -51,10 +51,7 @@ export class AccountController {
   @ApiOperation({ summary: 'Update account information' })
   @ApiResponse({ status: 200, description: 'Account updated successfully' })
   @ApiResponse({ status: 400, description: 'Bad request' })
-  update(
-    @Request() req,
-    @Body() UpdateAccountDto: UpdateAccountDto
-  ) {
+  update(@Request() req, @Body() UpdateAccountDto: UpdateAccountDto) {
     return this.accountService.update(req.user.id, UpdateAccountDto);
   }
 }

@@ -12,7 +12,7 @@ import { PatientInformationModule } from '../patient-information/patient-informa
     TypeOrmModule.forFeature([Samples]),
     CommonModule,
     UploadsModule,
-    PatientInformationModule
+    PatientInformationModule,
   ],
   controllers: [SamplesController],
   providers: [SamplesService],
