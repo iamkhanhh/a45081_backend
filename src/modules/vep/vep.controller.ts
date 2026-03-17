@@ -10,22 +10,28 @@ import { UpdateAnalysisStatusDto } from './dto/update-analysis-status.dto';
 @Public()
 @UseGuards(VepGuard)
 export class VepController {
-  constructor(private readonly vepService: VepService) {}
+	constructor(private readonly vepService: VepService) {}
 
-  @Get('get-pending-analysis')
-  @ApiOperation({ summary: 'Get pending VEP analyses' })
-  @ApiResponse({ status: 200, description: 'Pending analyses retrieved successfully' })
-  async getPendingAnalysis() {
-    return this.vepService.getPendingAnalysis();
-  }
+	@Get('get-pending-analysis')
+	@ApiOperation({ summary: 'Get pending VEP analyses' })
+	@ApiResponse({
+		status: 200,
+		description: 'Pending analyses retrieved successfully',
+	})
+	async getPendingAnalysis() {
+		return this.vepService.getPendingAnalysis();
+	}
 
-  @Put('update-analysis-status')
-  @ApiOperation({ summary: 'Update analysis status after VEP processing' })
-  @ApiResponse({ status: 200, description: 'Analysis status updated successfully' })
-  @ApiResponse({ status: 400, description: 'Bad request' })
-  async updateAnalysisStatus(
-    @Body() updateAnalysisStatusDto: UpdateAnalysisStatusDto
-  ) {
-    return this.vepService.updateAnalysisStatus(updateAnalysisStatusDto);
-  }
+	@Put('update-analysis-status')
+	@ApiOperation({ summary: 'Update analysis status after VEP processing' })
+	@ApiResponse({
+		status: 200,
+		description: 'Analysis status updated successfully',
+	})
+	@ApiResponse({ status: 400, description: 'Bad request' })
+	async updateAnalysisStatus(
+		@Body() updateAnalysisStatusDto: UpdateAnalysisStatusDto,
+	) {
+		return this.vepService.updateAnalysisStatus(updateAnalysisStatusDto);
+	}
 }

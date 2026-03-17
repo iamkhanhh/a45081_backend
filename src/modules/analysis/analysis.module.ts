@@ -10,15 +10,15 @@ import { WorkspacesModule } from '../workspaces/workspaces.module';
 import { Genes } from '@/entities/genes.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Analysis, Genes]),
-    PipelinesModule,
-    UploadsModule,
-    SamplesModule,
-    forwardRef(() => WorkspacesModule)
-  ],
-  controllers: [AnalysisController],
-  providers: [AnalysisService],
-  exports: [AnalysisService],
+	imports: [
+		TypeOrmModule.forFeature([Analysis, Genes]),
+		PipelinesModule,
+		UploadsModule,
+		SamplesModule,
+		forwardRef(() => WorkspacesModule),
+	],
+	controllers: [AnalysisController],
+	providers: [AnalysisService],
+	exports: [AnalysisService],
 })
 export class AnalysisModule {}

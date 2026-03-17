@@ -1,34 +1,34 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, Column } from 'typeorm';
 import { AbstractEntity } from './abstract.entity';
 
 @Entity()
-export class Samples extends AbstractEntity{
-  @Column()
-  name: string;
+export class Samples extends AbstractEntity {
+	@Column()
+	name: string;
 
-  @Column()
-  user_id: number;
+	@Column()
+	user_id: number;
 
-  @Column()
-  file_size: number;
+	@Column()
+	file_size: number;
 
-  @Column()
-  file_type: string;
+	@Column()
+	file_type: string;
 
-  @Column()
-  complete_status: number;
+	@Column()
+	complete_status: number;
 
-  @Column()
-  assembly: string;
+	@Column()
+	assembly: string;
 
-  static getSampleStatus(status: number): string {
+	static getSampleStatus(status: number): string {
 		switch (status) {
 			case 0:
-				return 'Incomplete'
+				return 'Incomplete';
 			case 1:
-				return 'Completed'
+				return 'Completed';
 			default:
-				return 'N/A'
+				return 'N/A';
 		}
-  }
+	}
 }

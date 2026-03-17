@@ -1,14 +1,14 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, Column } from 'typeorm';
 import { AbstractEntity } from './abstract.entity';
 
 @Entity()
-export class Pipelines extends AbstractEntity{
-  @Column()
-  name: string;
+export class Pipelines extends AbstractEntity {
+	@Column()
+	name: string;
 
-  @Column()
-  version: string;
+	@Column()
+	version: string;
 
-  @Column({default: 0})
-  is_deleted: number;
+	@Column({ default: 0 })
+	is_deleted: number;
 }

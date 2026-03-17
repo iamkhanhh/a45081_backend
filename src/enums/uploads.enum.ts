@@ -1,5 +1,5 @@
 export enum UploadStatus {
-    UPLOADING = 0,
-    COMPLETED = 1,
-    ERROR = 2,
+	UPLOADING = 0,
+	COMPLETED = 1,
+	ERROR = 2,
 }

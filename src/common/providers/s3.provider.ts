@@ -6,97 +6,118 @@ import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class S3Provider {
-    private readonly s3Client = new S3({
-        credentials: {
-            accessKeyId: this.configService.get<string>('AWS_ACCESS_KEY'),
-            secretAccessKey: this.configService.get<string>('AWS_SECRET_KEY'),
-        },
-        region: this.configService.get<string>('AWS_REGION'),
-    });
+	private readonly s3Client = new S3({
+		credentials: {
+			accessKeyId: this.configService.get<string>('AWS_ACCESS_KEY'),
+			secretAccessKey: this.configService.get<string>('AWS_SECRET_KEY'),
+		},
+		region: this.configService.get<string>('AWS_REGION'),
+	});
 
-    constructor(
-        private readonly configService: ConfigService
-    ) { }
+	constructor(private readonly configService: ConfigService) {}
 
-    async copyObject(source: string, destination: string) {
-        try {
-            process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-            await this.s3Client.copyObject({
-                Key: destination,
-                CopySource: source,
-                Bucket: this.configService.get('AWS_BUCKET')
-            }).promise();
-        } catch (error) {
-            console.error('S3Provider@copyObject:', error);
-            throw error;
-        }
-    }
+	async copyObject(source: string, destination: string) {
+		try {
+			process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+			await this.s3Client
+				.copyObject({
+					Key: destination,
+					CopySource: source,
+					Bucket: this.configService.get('AWS_BUCKET'),
+				})
+				.promise();
+		} catch (error) {
+			console.error('S3Provider@copyObject:', error);
+			throw error;
+		}
+	}
 
-    async generateSinglePresignedUrl(fileName: string): Promise<string> {
-        const params = {
-            Bucket: this.configService.get<string>('AWS_BUCKET'),
-            Key: fileName,
-            Expires: 60 * 5,
-            // ACL: 'bucket-owner-full-control',
-            ContentType: 'text/vcard',
-        };
-        return this.s3Client.getSignedUrlPromise('putObject', params);
-    }
+	async generateSinglePresignedUrl(fileName: string): Promise<string> {
+		const params = {
+			Bucket: this.configService.get<string>('AWS_BUCKET'),
+			Key: fileName,
+			Expires: 60 * 5,
+			// ACL: 'bucket-owner-full-control',
+			ContentType: 'text/vcard',
+		};
+		return this.s3Client.getSignedUrlPromise('putObject', params);
+	}
 
-    async startMultipartUpload(fileName: string) {
-        const params: S3.CreateMultipartUploadRequest = {
-            Bucket: this.configService.get<string>('AWS_BUCKET'),
-            Key: fileName,
-            ContentType: 'text/vcard'
-        };
+	async startMultipartUpload(fileName: string) {
+		const params: S3.CreateMultipartUploadRequest = {
+			Bucket: this.configService.get<string>('AWS_BUCKET'),
+			Key: fileName,
+			ContentType: 'text/vcard',
+		};
 
-        const multipart = await this.s3Client.createMultipartUpload(params).promise();
-        return multipart.UploadId;
-    }
+		const multipart = await this.s3Client
+			.createMultipartUpload(params)
+			.promise();
+		return multipart.UploadId;
+	}
 
-    async generatePresignedUrls(fileName: string, uploadId: string, partNumbers: number) {
-        const totalParts = Array.from({ length: partNumbers }, (_, i) => i + 1);
+	async generatePresignedUrls(
+		fileName: string,
+		uploadId: string,
+		partNumbers: number,
+	) {
+		const totalParts = Array.from({ length: partNumbers }, (_, i) => i + 1);
 
-        const presignedUrls = await Promise.all(
-            totalParts.map(async (partNumber) => {
-                const params = {
-                    Bucket: this.configService.get<string>('AWS_BUCKET'),
-                    Key: fileName,
-                    PartNumber: partNumber,
-                    UploadId: uploadId,
-                    Expires: 60 * 60,
-                };
-                return this.s3Client.getSignedUrlPromise('uploadPart', params);
-            }),
-        );
+		const presignedUrls = await Promise.all(
+			totalParts.map(async (partNumber) => {
+				const params = {
+					Bucket: this.configService.get<string>('AWS_BUCKET'),
+					Key: fileName,
+					PartNumber: partNumber,
+					UploadId: uploadId,
+					Expires: 60 * 60,
+				};
+				return this.s3Client.getSignedUrlPromise('uploadPart', params);
+			}),
+		);
 
-        return presignedUrls;
-    }
+		return presignedUrls;
+	}
 
-    async completeMultipartUpload(fileName: string, uploadId: string, parts: { etag: string }[]) {
-        const params: S3.CompleteMultipartUploadRequest = {
-            Bucket: this.configService.get<string>('AWS_BUCKET'),
-            Key: fileName,
-            UploadId: uploadId,
-            MultipartUpload: {
-                Parts: parts.map((part, index) => ({
-                    ETag: part.etag,
-                    PartNumber: index + 1,
-                })),
-            },
-        };
+	async completeMultipartUpload(
+		fileName: string,
+		uploadId: string,
+		parts: { etag: string }[],
+	) {
+		const params: S3.CompleteMultipartUploadRequest = {
+			Bucket: this.configService.get<string>('AWS_BUCKET'),
+			Key: fileName,
+			UploadId: uploadId,
+			MultipartUpload: {
+				Parts: parts.map((part, index) => ({
+					ETag: part.etag,
+					PartNumber: index + 1,
+				})),
+			},
+		};
 
-        return await this.s3Client.completeMultipartUpload(params).promise();
-    }
+		return await this.s3Client.completeMultipartUpload(params).promise();
+	}
 
-    generateFileName(name: string) {
-        name = name.replace(/\s/g, '_').trim();
+	async generateDownloadUrl(fileName: string): Promise<string> {
+		const params = {
+			Bucket: this.configService.get<string>('AWS_BUCKET'),
+			Key: fileName,
+			Expires: 60 * 5,
+			ResponseContentDisposition: `attachment; filename="${path.basename(fileName)}"`,
+		};
 
-        let extension = name.match(/\.[^.]+(\.[^.]+)?$/)?.[0] || '';
-        let baseName = extension ? name.replace(extension, '') : name;
+		return this.s3Client.getSignedUrlPromise('getObject', params);
+	}
 
-        let timeStamp = new Date().getTime().toString().trim();
+	generateFileName(name: string) {
+		name = name.replace(/\s/g, '_').trim();
 
-        return `${baseName}-${timeStamp}-${uuidv4()}${extension}`;
-    }
+		const extension = name.match(/\.[^.]+(\.[^.]+)?$/)?.[0] || '';
+		const baseName = extension ? name.replace(extension, '') : name;
+
+		const timeStamp = new Date().getTime().toString().trim();
+
+		return `${baseName}-${timeStamp}-${uuidv4()}${extension}`;
+	}
 }

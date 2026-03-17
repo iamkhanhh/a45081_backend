@@ -7,12 +7,12 @@ import { CommonModule } from '@/common/common.module';
 import { AnalysisModule } from '../analysis/analysis.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([GeneClinicalSynopsis]),
-    CommonModule,
-    AnalysisModule
-  ],
-  controllers: [VariantsController],
-  providers: [VariantsService],
+	imports: [
+		TypeOrmModule.forFeature([GeneClinicalSynopsis]),
+		CommonModule,
+		AnalysisModule,
+	],
+	controllers: [VariantsController],
+	providers: [VariantsService],
 })
 export class VariantsModule {}

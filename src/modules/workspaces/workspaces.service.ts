@@ -1,11 +1,16 @@
-import { BadRequestException, forwardRef, Inject, Injectable } from '@nestjs/common';
+import {
+	BadRequestException,
+	forwardRef,
+	Inject,
+	Injectable,
+} from '@nestjs/common';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 import { Workspaces } from '@/entities';
 import { Like, Raw, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PipelinesService } from '../pipelines/pipelines.service';
-import * as dayjs from 'dayjs'
+import * as dayjs from 'dayjs';
 import { PaginationProvider } from '@/common/providers/pagination.provider';
 import { FilterWorkspacesDto } from './dto/filter-workspaces.dto';
 import { DeleteMultipleWorkspacesDto } from './dto/delete-multiple-workspaces.dto';
@@ -13,160 +18,192 @@ import { AnalysisService } from '../analysis/analysis.service';
 
 @Injectable()
 export class WorkspacesService {
+	constructor(
+		@InjectRepository(Workspaces)
+		private workspacesRepository: Repository<Workspaces>,
+		private readonly pipelinesService: PipelinesService,
+		@Inject(forwardRef(() => AnalysisService))
+		private readonly analysisService: AnalysisService,
+		private readonly paginationProvider: PaginationProvider,
+	) {}
 
-  constructor(
-    @InjectRepository(Workspaces) private workspacesRepository: Repository<Workspaces>,
-    private readonly pipelinesService: PipelinesService,
-    @Inject(forwardRef(() => AnalysisService))
-    private readonly analysisService: AnalysisService,
-    private readonly paginationProvider: PaginationProvider
-  ) {}
+	async create(createWorkspaceDto: CreateWorkspaceDto, id: number) {
+		const existed_workspace = await this.workspacesRepository.findOne({
+			where: { name: createWorkspaceDto.name },
+		});
+		if (existed_workspace) {
+			throw new BadRequestException('Your workspace name is already existed!');
+		}
 
-  async create(createWorkspaceDto: CreateWorkspaceDto, id: number) {
-    const existed_workspace = await this.workspacesRepository.findOne({where: {name: createWorkspaceDto.name}});
-    if (existed_workspace) {
-      throw new BadRequestException('Your workspace name is already existed!');
-    }
+		const newWorkspace = new Workspaces();
+		newWorkspace.dashboard = createWorkspaceDto.dashboard;
+		newWorkspace.name = createWorkspaceDto.name;
+		newWorkspace.pipeline = createWorkspaceDto.pipeline;
+		newWorkspace.is_deleted = 0;
+		newWorkspace.user_created_id = id;
+		newWorkspace.number = 0;
+		const savedWorkspace = await this.workspacesRepository.save(newWorkspace);
 
-    const newWorkspace = new Workspaces();
-    newWorkspace.dashboard = createWorkspaceDto.dashboard;
-    newWorkspace.name = createWorkspaceDto.name;
-    newWorkspace.pipeline = createWorkspaceDto.pipeline;
-    newWorkspace.is_deleted = 0;
-    newWorkspace.user_created_id = id;
-    newWorkspace.number = 0;
-    const savedWorkspace = await this.workspacesRepository.save(newWorkspace);
+		return {
+			status: 'success',
+			message: 'Created workspace successfully !',
+			data: savedWorkspace,
+		};
+	}
 
-    return {
-      status: 'success',
-      message: 'Created workspace successfully !',
-      data: savedWorkspace
-    };
-  }
+	async findAll(
+		id: number,
+		page: number,
+		pageSize: number,
+		filterWorkspacesDto: FilterWorkspacesDto,
+	) {
+		const filters: any = {
+			user_created_id: id,
+			is_deleted: 0,
+		};
 
-  async findAll(id: number, page: number, pageSize: number, filterWorkspacesDto: FilterWorkspacesDto) {
-    const filters: any = {
-      user_created_id: id, 
-      is_deleted: 0
-    }
+		if (filterWorkspacesDto.searchDate != '') {
+			filters.createdAt = Raw((alias) => `${alias} > :date`, {
+				date: filterWorkspacesDto.searchDate,
+			});
+		}
 
-    if (filterWorkspacesDto.searchDate != '') {
-      filters.createdAt = Raw((alias) => `${alias} > :date`, { date: filterWorkspacesDto.searchDate})
-    }
+		if (filterWorkspacesDto.searchTerm != '') {
+			filters.name = Like(`%${filterWorkspacesDto.searchTerm}%`);
+		}
 
-    if (filterWorkspacesDto.searchTerm != '') {
-      filters.name = Like(`%${filterWorkspacesDto.searchTerm}%`)
-    }
+		const results = await this.paginationProvider.paginate<Workspaces>(
+			page,
+			pageSize,
+			this.workspacesRepository,
+			filters,
+		);
 
-    const results = await this.paginationProvider.paginate<Workspaces>(page, pageSize, this.workspacesRepository, filters);
+		const data = await Promise.all(
+			results.data.map(async (workspace) => {
+				const pipeline_name = await this.pipelinesService.getPipelineNameFromId(
+					workspace.pipeline,
+				);
+				const formatted_date = dayjs(workspace.createdAt).format('DD/MM/YYYY');
+				const updatedAt = dayjs(workspace.updatedAt).format('DD/MM/YYYY');
+				return {
+					id: workspace.id,
+					name: workspace.name,
+					number: workspace.number,
+					createdAt: formatted_date,
+					pipeline_name: pipeline_name,
+					updatedAt,
+				};
+			}),
+		);
 
-    const data = await Promise.all(results.data.map(async (workspace) => {
-      const pipeline_name = await this.pipelinesService.getPipelineNameFromId(workspace.pipeline);
-      const formatted_date = dayjs(workspace.createdAt).format('DD/MM/YYYY');
-      const updatedAt = dayjs(workspace.updatedAt).format('DD/MM/YYYY');
-      return {
-        id: workspace.id,
-        name: workspace.name,
-        number: workspace.number,
-        createdAt: formatted_date,
-        pipeline_name: pipeline_name,
-        updatedAt
-      }
-    }));
+		return {
+			...results,
+			data,
+			message: 'List all workspaces successfully!',
+		};
+	}
 
-    return {
-      ...results,
-      data,
-      message: 'List all workspaces successfully!'
-    };
-  }
+	async index(id: number) {
+		const workspace = await this.workspacesRepository.findOne({
+			where: { id },
+		});
+		if (!workspace) {
+			throw new BadRequestException('That workspace could not be found');
+		}
+		return {
+			status: 'success',
+			message: 'got workspace successfully!',
+			data: workspace,
+		};
+	}
 
-  async index(id: number) {
-    const workspace = await this.workspacesRepository.findOne({where: {id}});
-    if (!workspace) {
-      throw new BadRequestException('That workspace could not be found')
-    }
-    return {
-      status: 'success',
-      message: 'got workspace successfully!',
-      data: workspace
-    };
-  }
+	async getTotal(user_id: number) {
+		const workspaces = await this.workspacesRepository.find({
+			where: { user_created_id: user_id, is_deleted: 0 },
+		});
+		return workspaces.length;
+	}
 
-  async getTotal(user_id: number) {
-    const workspaces = await this.workspacesRepository.find({where: {user_created_id: user_id, is_deleted: 0}});
-    return workspaces.length;
-  }
+	async getWorkspacesStatistics(
+		user_id: number,
+		lastSixMonthsNumbers: number[],
+	) {
+		const data = [];
 
-  async getWorkspacesStatistics(user_id: number, lastSixMonthsNumbers: number[]) {
-    let data = [];
+		const now = new Date();
+		const currentYear = now.getFullYear();
+		const currentMonth = now.getMonth() + 1;
 
-    const now = new Date();
-    let currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1;
+		for (const month of lastSixMonthsNumbers) {
+			const year = month > currentMonth ? currentYear - 1 : currentYear;
 
-    for (let month of lastSixMonthsNumbers) {
+			const results = await this.workspacesRepository
+				.createQueryBuilder('workspaces')
+				.where('MONTH(workspaces.createdAt) = :month', { month })
+				.andWhere('YEAR(workspaces.createdAt) = :year', { year })
+				.andWhere('workspaces.user_created_id = :user_id', { user_id })
+				.getMany();
 
-      let year = month > currentMonth ? currentYear - 1 : currentYear;
-      
-      const results = await this.workspacesRepository
-        .createQueryBuilder('workspaces')
-        .where('MONTH(workspaces.createdAt) = :month', { month })
-        .andWhere('YEAR(workspaces.createdAt) = :year', { year })
-        .andWhere('workspaces.user_created_id = :user_id', { user_id })
-        .getMany();
-  
-      data.push(results.length);
-    }
+			data.push(results.length);
+		}
 
-    return data;
-  }
+		return data;
+	}
 
-  async getWorkspaceName(id: number) {
-    const workspace = await this.workspacesRepository.findOne({where: {id}});
-    if (!workspace) {
-      throw new BadRequestException('That workspace could not be found')
-    }
-    return {
-      status: 'success',
-      message: 'getWorkspaceName successfully!',
-      data: workspace.name
-    };
-  }
+	async getWorkspaceName(id: number) {
+		const workspace = await this.workspacesRepository.findOne({
+			where: { id },
+		});
+		if (!workspace) {
+			throw new BadRequestException('That workspace could not be found');
+		}
+		return {
+			status: 'success',
+			message: 'getWorkspaceName successfully!',
+			data: workspace.name,
+		};
+	}
 
-  async update(id: number, updateWorkspaceDto: UpdateWorkspaceDto) {
-    const workspace = await this.workspacesRepository.findOne({where: {id}});
-    if (!workspace) {
-      throw new BadRequestException('That workspace could not be found')
-    }
-    await this.workspacesRepository.update({id}, {...updateWorkspaceDto});
+	async update(id: number, updateWorkspaceDto: UpdateWorkspaceDto) {
+		const workspace = await this.workspacesRepository.findOne({
+			where: { id },
+		});
+		if (!workspace) {
+			throw new BadRequestException('That workspace could not be found');
+		}
+		await this.workspacesRepository.update({ id }, { ...updateWorkspaceDto });
 
-    return {
-      status: 'success',
-      message: 'Updated successfully!'
-    }
-  }
+		return {
+			status: 'success',
+			message: 'Updated successfully!',
+		};
+	}
 
-  async remove(id: number) {
-    const workspace = await this.workspacesRepository.findOne({where: {id}});
-    if (!workspace) {
-      throw new BadRequestException('That workspace could not be found')
-    }
-    await this.workspacesRepository.update({id}, {is_deleted: 1});
-    await this.analysisService.deleteAnalysesByWorkspaceId(id);
-    return {
-      status: 'success',
-      message: 'Deleted successfully!'
-    };
-  }
+	async remove(id: number) {
+		const workspace = await this.workspacesRepository.findOne({
+			where: { id },
+		});
+		if (!workspace) {
+			throw new BadRequestException('That workspace could not be found');
+		}
+		await this.workspacesRepository.update({ id }, { is_deleted: 1 });
+		await this.analysisService.deleteAnalysesByWorkspaceId(id);
+		return {
+			status: 'success',
+			message: 'Deleted successfully!',
+		};
+	}
 
-  async deleteMultipleWorkspaces(deleteMultipleWorkspacesDto: DeleteMultipleWorkspacesDto) {
-    for (let workspace_id of deleteMultipleWorkspacesDto.ids) {
-      await this.remove(workspace_id);
-    }
-    return {
-      status: 'success',
-      message: 'Delete multiple workspaces successfully!'
-    }
-  }
+	async deleteMultipleWorkspaces(
+		deleteMultipleWorkspacesDto: DeleteMultipleWorkspacesDto,
+	) {
+		for (const workspace_id of deleteMultipleWorkspacesDto.ids) {
+			await this.remove(workspace_id);
+		}
+		return {
+			status: 'success',
+			message: 'Delete multiple workspaces successfully!',
+		};
+	}
 }

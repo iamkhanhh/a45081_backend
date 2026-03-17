@@ -5,11 +5,9 @@ import { Uploads } from '@/entities';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Uploads]),
-  ],
-  controllers: [UploadsController],
-  providers: [UploadsService],
-  exports: [UploadsService]
+	imports: [TypeOrmModule.forFeature([Uploads])],
+	controllers: [UploadsController],
+	providers: [UploadsService],
+	exports: [UploadsService],
 })
 export class UploadsModule {}

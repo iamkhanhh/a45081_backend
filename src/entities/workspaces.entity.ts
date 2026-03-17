@@ -1,23 +1,23 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, Column } from 'typeorm';
 import { AbstractEntity } from './abstract.entity';
 
 @Entity()
 export class Workspaces extends AbstractEntity {
-  @Column()
-  name: string;
+	@Column()
+	name: string;
 
-  @Column()
-  user_created_id: number;
+	@Column()
+	user_created_id: number;
 
-  @Column()
-  number: number;
+	@Column()
+	number: number;
 
-  @Column()
-  pipeline: number;
+	@Column()
+	pipeline: number;
 
-  @Column({ type: 'text'})
-  dashboard: string;
+	@Column({ type: 'text' })
+	dashboard: string;
 
-  @Column({default: 0})
-  is_deleted: number;
+	@Column({ default: 0 })
+	is_deleted: number;
 }
