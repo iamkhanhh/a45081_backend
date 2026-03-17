@@ -10,30 +10,30 @@ import { FastqGuard } from '@/auth/passport/fastq.guard';
 @Public()
 @UseGuards(FastqGuard)
 export class VariantCallingController {
-  constructor(private readonly variantCallingService: VariantCallingService) {}
+	constructor(private readonly variantCallingService: VariantCallingService) {}
 
-  @Get('get-pending-analysis-fastq')
-  @ApiOperation({ summary: 'Get pending FASTQ analyses for variant calling' })
-  @ApiResponse({
-    status: 200,
-    description: 'Pending FASTQ analyses retrieved successfully',
-  })
-  async getPendingAnalysis() {
-    return this.variantCallingService.getPendingAnalysis();
-  }
+	@Get('get-pending-analysis-fastq')
+	@ApiOperation({ summary: 'Get pending FASTQ analyses for variant calling' })
+	@ApiResponse({
+		status: 200,
+		description: 'Pending FASTQ analyses retrieved successfully',
+	})
+	async getPendingAnalysis() {
+		return this.variantCallingService.getPendingAnalysis();
+	}
 
-  @Put('update-analysis-status')
-  @ApiOperation({ summary: 'Update analysis status after variant calling' })
-  @ApiResponse({
-    status: 200,
-    description: 'Analysis status updated successfully',
-  })
-  @ApiResponse({ status: 400, description: 'Bad request' })
-  async updateAnalysisStatus(
-    @Body() updateAnalysisStatusDto: UpdateAnalysisStatusDto,
-  ) {
-    return this.variantCallingService.updateAnalysisStatus(
-      updateAnalysisStatusDto,
-    );
-  }
+	@Put('update-analysis-status')
+	@ApiOperation({ summary: 'Update analysis status after variant calling' })
+	@ApiResponse({
+		status: 200,
+		description: 'Analysis status updated successfully',
+	})
+	@ApiResponse({ status: 400, description: 'Bad request' })
+	async updateAnalysisStatus(
+		@Body() updateAnalysisStatusDto: UpdateAnalysisStatusDto,
+	) {
+		return this.variantCallingService.updateAnalysisStatus(
+			updateAnalysisStatusDto,
+		);
+	}
 }

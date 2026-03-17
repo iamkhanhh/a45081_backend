@@ -8,13 +8,13 @@ import { PatientInformationModule } from '../patient-information/patient-informa
 import { AnalysisModule } from '../analysis/analysis.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Report]),
-    VariantsModule,
-    AnalysisModule,
-    PatientInformationModule,
-  ],
-  controllers: [ReportController],
-  providers: [ReportService],
+	imports: [
+		TypeOrmModule.forFeature([Report]),
+		VariantsModule,
+		AnalysisModule,
+		PatientInformationModule,
+	],
+	controllers: [ReportController],
+	providers: [ReportService],
 })
 export class ReportModule {}

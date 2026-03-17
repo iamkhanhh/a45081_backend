@@ -3,12 +3,12 @@ import { AbstractEntity } from './abstract.entity';
 
 @Entity()
 export class Pipelines extends AbstractEntity {
-  @Column()
-  name: string;
+	@Column()
+	name: string;
 
-  @Column()
-  version: string;
+	@Column()
+	version: string;
 
-  @Column({ default: 0 })
-  is_deleted: number;
+	@Column({ default: 0 })
+	is_deleted: number;
 }

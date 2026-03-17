@@ -3,18 +3,18 @@ import { AbstractEntity } from './abstract.entity';
 
 @Entity()
 export class Report extends AbstractEntity {
-  @Column()
-  report_name: string;
+	@Column()
+	report_name: string;
 
-  @Column()
-  analysis_id: number;
+	@Column()
+	analysis_id: number;
 
-  @Column()
-  user_created: number;
+	@Column()
+	user_created: number;
 
-  @Column({ nullable: true })
-  file_path: string;
+	@Column({ nullable: true })
+	file_path: string;
 
-  @Column({ default: 0 })
-  is_deleted: number;
+	@Column({ default: 0 })
+	is_deleted: number;
 }

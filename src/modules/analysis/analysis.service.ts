@@ -1,8 +1,8 @@
 import {
-  BadRequestException,
-  forwardRef,
-  Inject,
-  Injectable,
+	BadRequestException,
+	forwardRef,
+	Inject,
+	Injectable,
 } from '@nestjs/common';
 import { CreateAnalysisDto } from './dto/create-analysis.dto';
 import { UpdateAnalysisDto } from './dto/update-analysis.dto';
@@ -27,597 +27,597 @@ import { createHash } from 'crypto';
 
 @Injectable()
 export class AnalysisService {
-  constructor(
-    @InjectRepository(Analysis)
-    private analysisRepository: Repository<Analysis>,
-    @InjectRepository(Genes) private genesRepository: Repository<Genes>,
-    private readonly pipelinesService: PipelinesService,
-    private readonly paginationProvider: PaginationProvider,
-    private readonly uploadsService: UploadsService,
-    private readonly samplesService: SamplesService,
-    @Inject(forwardRef(() => WorkspacesService))
-    private readonly workspacesService: WorkspacesService,
-    private readonly configService: ConfigService,
-    private readonly s3Provider: S3Provider,
-    private readonly analysisGateway: AnalysisGateway,
-  ) {}
-
-  async create(createAnalysisDto: CreateAnalysisDto, user_id: number) {
-    const workspace = await this.workspacesService.index(
-      createAnalysisDto.project_id,
-    );
-    const uploads = await this.uploadsService.findUploadsBySampleId(
-      createAnalysisDto.sample_id,
-    );
-    const newAnalysis = new Analysis();
-
-    newAnalysis.name = createAnalysisDto.name;
-    newAnalysis.project_id = createAnalysisDto.project_id;
-    newAnalysis.pipeline_id = createAnalysisDto.pipeline_id;
-    newAnalysis.sample_id = createAnalysisDto.sample_id;
-    newAnalysis.p_type = createAnalysisDto.p_type;
-    newAnalysis.size = createAnalysisDto.size;
-    newAnalysis.description = createAnalysisDto.description;
-    newAnalysis.assembly = createAnalysisDto.assembly;
-    newAnalysis.user_id = user_id;
-    newAnalysis.is_deleted = 0;
-    newAnalysis.sequencing_type = createAnalysisDto.sequencing_type;
-
-    if (createAnalysisDto.p_type == 'vcf') {
-      newAnalysis.status = AnalysisStatus.QUEUING;
-    } else {
-      newAnalysis.status = AnalysisStatus.FASTQ_QUEUING;
-    }
-
-    const result = await this.analysisRepository.save(newAnalysis);
-    const igv_local_path = `${this.configService.get<string>('ANALYSIS_FOLDER')}/${user_id}/${result.id}`;
-    await this.analysisRepository.update(
-      { id: result.id },
-      { igv_local_path, upload_id: uploads[0].id },
-    );
-
-    for (const e of uploads) {
-      const destination = `${this.configService.get<string>('ANALYSIS_FOLDER')}/${result.user_id}/${result.id}/${e.upload_name}`;
-      const source = encodeURIComponent(
-        `${this.configService.get<string>('AWS_BUCKET')}/${e.file_path}`,
-      );
-
-      await this.s3Provider.copyObject(source, destination);
-    }
-
-    await this.workspacesService.update(workspace.data.id, {
-      number: workspace.data.number++,
-    });
-
-    return {
-      status: 'success',
-      message: 'Create analysis successfully',
-    };
-  }
-
-  async findAll(
-    user_id: number,
-    page: number,
-    pageSize: number,
-    filterAnalysisDto: FilterAnalysisDto,
-  ) {
-    const filters: any = {
-      user_id: user_id,
-      is_deleted: 0,
-    };
-
-    if (filterAnalysisDto.status != '') {
-      const statusMap = {
-        queuing: [AnalysisStatus.QUEUING, AnalysisStatus.FASTQ_QUEUING],
-        analyzing: [
-          AnalysisStatus.ANALYZING,
-          AnalysisStatus.FASTQ_ANALYZING,
-          AnalysisStatus.VEP_ANALYZED,
-          AnalysisStatus.IMPORTING,
-        ],
-        analyzed: [AnalysisStatus.ANALYZED],
-        error: [AnalysisStatus.ERROR, AnalysisStatus.FASTQ_ERROR],
-      };
-
-      const statuses = statusMap[filterAnalysisDto.status.toLowerCase()];
-      if (statuses) {
-        filters.status = In(statuses);
-      }
-    }
-    if (filterAnalysisDto.assembly != '') {
-      filters.assembly = filterAnalysisDto.assembly;
-    }
-    if (filterAnalysisDto.analysisName != '') {
-      filters.name = Like(`%${filterAnalysisDto.analysisName}%`);
-    }
-
-    const results = await this.paginationProvider.paginate(
-      page,
-      pageSize,
-      this.analysisRepository,
-      filters,
-    );
-
-    const data = await Promise.all(
-      results.data.map(async (analysis) => {
-        const createdAt = dayjs(analysis.createdAt).format('DD/MM/YYYY');
-        const analyzed = analysis.analyzed
-          ? dayjs(analysis.analyzed).format('DD/MM/YYYY')
-          : '';
-        const workspaceName = await this.workspacesService.getWorkspaceName(
-          analysis.project_id,
-        );
-        return {
-          id: analysis.id,
-          name: analysis.name,
-          workspaceName: workspaceName ? workspaceName.data : '',
-          createdAt: createdAt,
-          analyzed: analyzed,
-          variants: analysis.variants,
-          assembly: analysis.assembly,
-          status: Analysis.getAnalysisStatus(analysis.status),
-        };
-      }),
-    );
-
-    return {
-      ...results,
-      data,
-      message: 'List all analyses successfully!',
-    };
-  }
-
-  async findOne(id: number) {
-    const analysis = await this.analysisRepository.findOne({ where: { id } });
-    if (!analysis) {
-      throw new BadRequestException('That analysis could not be found');
-    }
-    const sample = await this.samplesService.findOne(analysis.sample_id);
-
-    return {
-      status: 'success',
-      message: 'got analysis successfully!',
-      data: {
-        ...analysis,
-        sampleName: sample.data.name,
-      },
-    };
-  }
-
-  async getTotal(user_id: number) {
-    const analyses = await this.analysisRepository.find({
-      where: { user_id: user_id, is_deleted: 0 },
-    });
-    return analyses.length;
-  }
-
-  async getAnalysesStatistics(user_id: number, lastSixMonthsNumbers: number[]) {
-    const data = [];
-
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1;
-
-    for (const month of lastSixMonthsNumbers) {
-      const year = month > currentMonth ? currentYear - 1 : currentYear;
-
-      const results = await this.analysisRepository
-        .createQueryBuilder('analysis')
-        .where('MONTH(analysis.createdAt) = :month', { month })
-        .andWhere('YEAR(analysis.createdAt) = :year', { year })
-        .andWhere('analysis.user_id = :user_id', { user_id })
-        .getMany();
-
-      data.push(results.length);
-    }
-
-    return data;
-  }
-
-  async getRecentAnalyses(user_id: number) {
-    const analyses = await this.analysisRepository.find({
-      where: { user_id: user_id, is_deleted: 0 },
-      order: { createdAt: 'DESC' },
-      take: 10,
-    });
-
-    const data = await Promise.all(
-      analyses.map(async (analysis) => {
-        const createdAt = dayjs(analysis.createdAt).format('DD/MM/YYYY');
-        const analyzed = analysis.analyzed
-          ? dayjs(analysis.analyzed).format('DD/MM/YYYY')
-          : '';
-        const workspaceName = await this.workspacesService.getWorkspaceName(
-          analysis.project_id,
-        );
-        return {
-          id: analysis.id,
-          name: analysis.name,
-          workspaceName: workspaceName ? workspaceName.data : '',
-          createdAt: createdAt,
-          analyzed: analyzed,
-          variants: analysis.variants,
-          assembly: analysis.assembly,
-          status: Analysis.getAnalysisStatus(analysis.status),
-        };
-      }),
-    );
-
-    return data;
-  }
-
-  async getGeneDetail(getGeneDetailDto: GetGeneDetailDto) {
-    try {
-      const gene = await this.genesRepository.findOne({
-        where: { name: getGeneDetailDto.geneName },
-      });
-
-      const geneInfo = {
-        synonyms: gene.name,
-        full_name: gene ? gene.full_name : '',
-        function: gene ? gene.summary : '',
-      };
-
-      return {
-        status: 'success',
-        message: 'Get gene detail successfully',
-        data: geneInfo,
-      };
-    } catch (error) {
-      console.log('AnalysisService@getGeneDetail: ', error);
-
-      return { status: 'error' };
-    }
-  }
-
-  async getAnalysesByWorkspaceId(
-    workspace_id: number,
-    user_id: number,
-    page: number,
-    pageSize: number,
-    filterAnalysisDto: FilterAnalysisDto,
-  ) {
-    const filters: any = {
-      project_id: workspace_id,
-      user_id: user_id,
-      is_deleted: 0,
-    };
-
-    if (filterAnalysisDto.status != '') {
-      const statusMap = {
-        queuing: [AnalysisStatus.QUEUING, AnalysisStatus.FASTQ_QUEUING],
-        analyzing: [
-          AnalysisStatus.ANALYZING,
-          AnalysisStatus.FASTQ_ANALYZING,
-          AnalysisStatus.VEP_ANALYZED,
-          AnalysisStatus.IMPORTING,
-        ],
-        analyzed: [AnalysisStatus.ANALYZED],
-        error: [AnalysisStatus.ERROR, AnalysisStatus.FASTQ_ERROR],
-      };
-
-      const statuses = statusMap[filterAnalysisDto.status.toLowerCase()];
-      if (statuses) {
-        filters.status = In(statuses);
-      }
-    }
-    if (filterAnalysisDto.assembly != '') {
-      filters.assembly = filterAnalysisDto.assembly;
-    }
-    if (filterAnalysisDto.analysisName != '') {
-      filters.name = Like(`%${filterAnalysisDto.analysisName}%`);
-    }
-    if (filterAnalysisDto.sampleName != '') {
-      const temp = await this.samplesService.getSamplesBySampleName(
-        filterAnalysisDto.sampleName,
-      );
-      filters.sample_id = In(temp);
-    }
-
-    const results = await this.paginationProvider.paginate(
-      page,
-      pageSize,
-      this.analysisRepository,
-      filters,
-    );
-
-    const data = await Promise.all(
-      results.data.map(async (analysis) => {
-        const pipeline_name = await this.pipelinesService.getPipelineNameFromId(
-          analysis.pipeline_id,
-        );
-        const createdAt = dayjs(analysis.createdAt).format('DD/MM/YYYY');
-        const updatedAt = dayjs(analysis.updatedAt).format('DD/MM/YYYY');
-        const analyzed = analysis.analyzed
-          ? dayjs(analysis.analyzed).format('DD/MM/YYYY')
-          : '';
-        return {
-          id: analysis.id,
-          name: analysis.name,
-          pipeline_name: pipeline_name,
-          createdAt: createdAt,
-          updatedAt: updatedAt,
-          analyzed: analyzed,
-          variants: analysis.variants,
-          assembly: analysis.assembly,
-          sequencing_type: analysis.sequencing_type,
-          status: Analysis.getAnalysisStatus(analysis.status),
-        };
-      }),
-    );
-
-    return {
-      ...results,
-      data,
-      message: 'List all analyses successfully!',
-    };
-  }
-
-  async deleteAnalysesByWorkspaceId(workspace_id: number) {
-    return await this.analysisRepository.update(
-      { project_id: workspace_id },
-      { is_deleted: 1 },
-    );
-  }
-
-  async update(id: number, updateAnalysisDto: UpdateAnalysisDto) {
-    const analysis = await this.analysisRepository.findOne({ where: { id } });
-    if (!analysis) {
-      throw new BadRequestException('That analysis could not be found');
-    }
-    await this.analysisRepository.update({ id }, { ...updateAnalysisDto });
-
-    return {
-      status: 'success',
-      message: 'Updated successfully!',
-    };
-  }
-
-  async getQCVCF(id: number) {
-    const analysis = await this.analysisRepository.findOne({ where: { id } });
-    if (!analysis) {
-      throw new BadRequestException('That analysis could not be found');
-    }
-
-    const file_path =
-      'http://s3.amazonaws.com/vcf.files/ExAC.r0.2.sites.vep.vcf.gz';
-    const tbi_path = '';
-    const genome_build = analysis.assembly == 'hg19' ? 'GRCh37' : 'GRCh38';
-
-    return {
-      status: 'success',
-      message: 'Get QC URL successfully',
-      data: `${this.configService.get<string>('VCF_IOBIO_HOST')}/?species=Human&build=${genome_build}&vcf=${file_path}&tbi=${tbi_path}`,
-    };
-  }
-
-  async getIGVInfo(id: number, ip: string) {
-    const normalizedIp = ip === '::1' ? '127.0.0.1' : ip.replace('::ffff:', '');
-
-    const analysis = await this.analysisRepository.findOne({ where: { id } });
-    if (!analysis) {
-      throw new BadRequestException('That analysis could not be found');
-    }
-
-    const folderName = analysis.igv_local_path;
-
-    return {
-      status: 'success',
-      message: 'Get QC URL successfully',
-      data: {
-        bamUrl: this.getIgvLink(`${folderName}/analysis.bam`, normalizedIp),
-        bamIndexUrl: this.getIgvLink(
-          `${folderName}/analysis.bam.bai`,
-          normalizedIp,
-        ),
-        fastaUrl: analysis.assembly == 'hg19' ? 'GRCh37' : 'GRCh38',
-        fastaIndexUrl: analysis.assembly == 'hg19' ? 'GRCh37' : 'GRCh38',
-        geneUrl: analysis.assembly == 'hg19' ? 'GRCh37' : 'GRCh38',
-      },
-    };
-  }
-
-  getIgvLink(uri, client_ip) {
-    if (!uri || !client_ip) {
-      console.log('AnalysisService@getIgvLink: IP address undefined');
-      return undefined;
-    }
-
-    const url = this.configService.get<string>('IGV_HOST');
-    if (url == '') {
-      console.log('AnalysisService@getIgvLink: IGV host undefined');
-      return undefined;
-    }
-
-    uri = '/' + uri;
-
-    const secret = 'itisawsomekey1599';
-
-    const today = new Date();
-    const minute_exist = today.getMinutes() + 30;
-    const expires = Math.round(
-      new Date(
-        today.getFullYear(),
-        today.getMonth(),
-        today.getDate(),
-        today.getHours(),
-        minute_exist,
-        today.getSeconds(),
-      ).getTime() / 1000,
-    );
-    const input = uri + client_ip + expires + ' ' + secret;
-    const base64Value = createHash('md5').update(input).digest('base64');
-    const result =
-      url +
-      uri +
-      '?' +
-      'signatures=' +
-      base64Value.replace(/\+/g, '-').replace(/\//g, '_').replace(/\=/g, '') +
-      '&expires=' +
-      expires;
-
-    console.log(result);
-    return result;
-  }
-
-  async updateVariantsSelected(id: number, arr: VariantToReportDto[]) {
-    const analysis = await this.analysisRepository.findOne({ where: { id } });
-    if (!analysis) {
-      throw new BadRequestException('That analysis could not be found');
-    }
-    await this.analysisRepository.update(
-      { id },
-      { variants_to_report: JSON.stringify(arr) },
-    );
-
-    return {
-      status: 'success',
-      message: 'Updated variants selected successfully!',
-    };
-  }
-
-  async remove(id: number) {
-    const analysis = await this.analysisRepository.findOne({ where: { id } });
-    if (!analysis) {
-      throw new BadRequestException('That analysis could not be found');
-    }
-    await this.analysisRepository.update({ id }, { is_deleted: 1 });
-    return {
-      status: 'success',
-      message: 'Deleted successfully!',
-    };
-  }
-
-  async getPendingAnalysis(assembly: string) {
-    let data: any = null;
-    const analyses = await this.analysisRepository.find({
-      where: {
-        status: AnalysisStatus.QUEUING,
-        is_deleted: 0,
-        assembly: assembly,
-      },
-      order: {
-        createdAt: 'ASC',
-      },
-    });
-    if (analyses.length === 0) {
-      return data;
-    }
-
-    data = analyses[0];
-    const uploads = await this.uploadsService.findUploadsBySampleId(
-      data.sample_id,
-    );
-    data.upload = uploads[0];
-
-    const destination = `${this.configService.get<string>('ANALYSIS_FOLDER')}/${data.user_id}/${data.id}/analysis.anno`;
-    await this.analysisRepository.update(
-      { id: analyses[0].id },
-      { file_path: destination },
-    );
-
-    return data;
-  }
-
-  async getPendingFastqAnalysis() {
-    let data: any = null;
-    const analyses = await this.analysisRepository.find({
-      where: {
-        status: AnalysisStatus.FASTQ_QUEUING,
-        is_deleted: 0,
-      },
-      order: {
-        createdAt: 'ASC',
-      },
-    });
-    if (analyses.length === 0) {
-      return data;
-    }
-
-    data = analyses[0];
-    const uploads = await this.uploadsService.findUploadsBySampleId(
-      data.sample_id,
-    );
-    for (const e of uploads) {
-      if (e.fastq_pair_index == 1) {
-        data.fastq1 = e;
-      } else if (e.fastq_pair_index == 2) {
-        data.fastq2 = e;
-      }
-    }
-
-    // let destination = `${this.configService.get<string>('ANALYSIS_FOLDER')}/${data.user_id}/${data.id}/analysis.anno`;
-    // await this.analysisRepository.update({ id: analyses[0].id }, { file_path: destination });
-
-    return data;
-  }
-
-  async updateAnalysisStatus(analysisId: number, status: AnalysisStatus) {
-    const analysis = await this.analysisRepository.findOne({
-      where: { id: analysisId },
-    });
-    if (!analysis) {
-      throw new BadRequestException('That analysis could not be found');
-    }
-
-    if (status === AnalysisStatus.ANALYZED) {
-      analysis.analyzed = new Date();
-    }
-
-    analysis.status = status;
-    await this.analysisRepository.save(analysis);
-
-    this.analysisGateway.sendAnalysisStatusUpdate({
-      id: analysis.id,
-      status: Analysis.getAnalysisStatus(analysis.status),
-    });
-
-    return {
-      status: 'success',
-      message: 'Analysis status updated successfully',
-    };
-  }
-
-  async getAnalysisStaticsByStatus(user_id: number) {
-    const queuing = await this.analysisRepository.count({
-      where: {
-        user_id: user_id,
-        is_deleted: 0,
-        status: In([AnalysisStatus.QUEUING, AnalysisStatus.FASTQ_QUEUING]),
-      },
-    });
-    const analyzing = await this.analysisRepository.count({
-      where: {
-        user_id: user_id,
-        is_deleted: 0,
-        status: In([
-          AnalysisStatus.ANALYZING,
-          AnalysisStatus.FASTQ_ANALYZING,
-          AnalysisStatus.VEP_ANALYZED,
-          AnalysisStatus.IMPORTING,
-        ]),
-      },
-    });
-    const analyzed = await this.analysisRepository.count({
-      where: {
-        user_id: user_id,
-        is_deleted: 0,
-        status: AnalysisStatus.ANALYZED,
-      },
-    });
-    const error = await this.analysisRepository.count({
-      where: {
-        user_id: user_id,
-        is_deleted: 0,
-        status: In([AnalysisStatus.ERROR, AnalysisStatus.FASTQ_ERROR]),
-      },
-    });
-
-    return {
-      queuing,
-      analyzing,
-      analyzed,
-      error,
-    };
-  }
+	constructor(
+		@InjectRepository(Analysis)
+		private analysisRepository: Repository<Analysis>,
+		@InjectRepository(Genes) private genesRepository: Repository<Genes>,
+		private readonly pipelinesService: PipelinesService,
+		private readonly paginationProvider: PaginationProvider,
+		private readonly uploadsService: UploadsService,
+		private readonly samplesService: SamplesService,
+		@Inject(forwardRef(() => WorkspacesService))
+		private readonly workspacesService: WorkspacesService,
+		private readonly configService: ConfigService,
+		private readonly s3Provider: S3Provider,
+		private readonly analysisGateway: AnalysisGateway,
+	) {}
+
+	async create(createAnalysisDto: CreateAnalysisDto, user_id: number) {
+		const workspace = await this.workspacesService.index(
+			createAnalysisDto.project_id,
+		);
+		const uploads = await this.uploadsService.findUploadsBySampleId(
+			createAnalysisDto.sample_id,
+		);
+		const newAnalysis = new Analysis();
+
+		newAnalysis.name = createAnalysisDto.name;
+		newAnalysis.project_id = createAnalysisDto.project_id;
+		newAnalysis.pipeline_id = createAnalysisDto.pipeline_id;
+		newAnalysis.sample_id = createAnalysisDto.sample_id;
+		newAnalysis.p_type = createAnalysisDto.p_type;
+		newAnalysis.size = createAnalysisDto.size;
+		newAnalysis.description = createAnalysisDto.description;
+		newAnalysis.assembly = createAnalysisDto.assembly;
+		newAnalysis.user_id = user_id;
+		newAnalysis.is_deleted = 0;
+		newAnalysis.sequencing_type = createAnalysisDto.sequencing_type;
+
+		if (createAnalysisDto.p_type == 'vcf') {
+			newAnalysis.status = AnalysisStatus.QUEUING;
+		} else {
+			newAnalysis.status = AnalysisStatus.FASTQ_QUEUING;
+		}
+
+		const result = await this.analysisRepository.save(newAnalysis);
+		const igv_local_path = `${this.configService.get<string>('ANALYSIS_FOLDER')}/${user_id}/${result.id}`;
+		await this.analysisRepository.update(
+			{ id: result.id },
+			{ igv_local_path, upload_id: uploads[0].id },
+		);
+
+		for (const e of uploads) {
+			const destination = `${this.configService.get<string>('ANALYSIS_FOLDER')}/${result.user_id}/${result.id}/${e.upload_name}`;
+			const source = encodeURIComponent(
+				`${this.configService.get<string>('AWS_BUCKET')}/${e.file_path}`,
+			);
+
+			await this.s3Provider.copyObject(source, destination);
+		}
+
+		await this.workspacesService.update(workspace.data.id, {
+			number: workspace.data.number++,
+		});
+
+		return {
+			status: 'success',
+			message: 'Create analysis successfully',
+		};
+	}
+
+	async findAll(
+		user_id: number,
+		page: number,
+		pageSize: number,
+		filterAnalysisDto: FilterAnalysisDto,
+	) {
+		const filters: any = {
+			user_id: user_id,
+			is_deleted: 0,
+		};
+
+		if (filterAnalysisDto.status != '') {
+			const statusMap = {
+				queuing: [AnalysisStatus.QUEUING, AnalysisStatus.FASTQ_QUEUING],
+				analyzing: [
+					AnalysisStatus.ANALYZING,
+					AnalysisStatus.FASTQ_ANALYZING,
+					AnalysisStatus.VEP_ANALYZED,
+					AnalysisStatus.IMPORTING,
+				],
+				analyzed: [AnalysisStatus.ANALYZED],
+				error: [AnalysisStatus.ERROR, AnalysisStatus.FASTQ_ERROR],
+			};
+
+			const statuses = statusMap[filterAnalysisDto.status.toLowerCase()];
+			if (statuses) {
+				filters.status = In(statuses);
+			}
+		}
+		if (filterAnalysisDto.assembly != '') {
+			filters.assembly = filterAnalysisDto.assembly;
+		}
+		if (filterAnalysisDto.analysisName != '') {
+			filters.name = Like(`%${filterAnalysisDto.analysisName}%`);
+		}
+
+		const results = await this.paginationProvider.paginate(
+			page,
+			pageSize,
+			this.analysisRepository,
+			filters,
+		);
+
+		const data = await Promise.all(
+			results.data.map(async (analysis) => {
+				const createdAt = dayjs(analysis.createdAt).format('DD/MM/YYYY');
+				const analyzed = analysis.analyzed
+					? dayjs(analysis.analyzed).format('DD/MM/YYYY')
+					: '';
+				const workspaceName = await this.workspacesService.getWorkspaceName(
+					analysis.project_id,
+				);
+				return {
+					id: analysis.id,
+					name: analysis.name,
+					workspaceName: workspaceName ? workspaceName.data : '',
+					createdAt: createdAt,
+					analyzed: analyzed,
+					variants: analysis.variants,
+					assembly: analysis.assembly,
+					status: Analysis.getAnalysisStatus(analysis.status),
+				};
+			}),
+		);
+
+		return {
+			...results,
+			data,
+			message: 'List all analyses successfully!',
+		};
+	}
+
+	async findOne(id: number) {
+		const analysis = await this.analysisRepository.findOne({ where: { id } });
+		if (!analysis) {
+			throw new BadRequestException('That analysis could not be found');
+		}
+		const sample = await this.samplesService.findOne(analysis.sample_id);
+
+		return {
+			status: 'success',
+			message: 'got analysis successfully!',
+			data: {
+				...analysis,
+				sampleName: sample.data.name,
+			},
+		};
+	}
+
+	async getTotal(user_id: number) {
+		const analyses = await this.analysisRepository.find({
+			where: { user_id: user_id, is_deleted: 0 },
+		});
+		return analyses.length;
+	}
+
+	async getAnalysesStatistics(user_id: number, lastSixMonthsNumbers: number[]) {
+		const data = [];
+
+		const now = new Date();
+		const currentYear = now.getFullYear();
+		const currentMonth = now.getMonth() + 1;
+
+		for (const month of lastSixMonthsNumbers) {
+			const year = month > currentMonth ? currentYear - 1 : currentYear;
+
+			const results = await this.analysisRepository
+				.createQueryBuilder('analysis')
+				.where('MONTH(analysis.createdAt) = :month', { month })
+				.andWhere('YEAR(analysis.createdAt) = :year', { year })
+				.andWhere('analysis.user_id = :user_id', { user_id })
+				.getMany();
+
+			data.push(results.length);
+		}
+
+		return data;
+	}
+
+	async getRecentAnalyses(user_id: number) {
+		const analyses = await this.analysisRepository.find({
+			where: { user_id: user_id, is_deleted: 0 },
+			order: { createdAt: 'DESC' },
+			take: 10,
+		});
+
+		const data = await Promise.all(
+			analyses.map(async (analysis) => {
+				const createdAt = dayjs(analysis.createdAt).format('DD/MM/YYYY');
+				const analyzed = analysis.analyzed
+					? dayjs(analysis.analyzed).format('DD/MM/YYYY')
+					: '';
+				const workspaceName = await this.workspacesService.getWorkspaceName(
+					analysis.project_id,
+				);
+				return {
+					id: analysis.id,
+					name: analysis.name,
+					workspaceName: workspaceName ? workspaceName.data : '',
+					createdAt: createdAt,
+					analyzed: analyzed,
+					variants: analysis.variants,
+					assembly: analysis.assembly,
+					status: Analysis.getAnalysisStatus(analysis.status),
+				};
+			}),
+		);
+
+		return data;
+	}
+
+	async getGeneDetail(getGeneDetailDto: GetGeneDetailDto) {
+		try {
+			const gene = await this.genesRepository.findOne({
+				where: { name: getGeneDetailDto.geneName },
+			});
+
+			const geneInfo = {
+				synonyms: gene.name,
+				full_name: gene ? gene.full_name : '',
+				function: gene ? gene.summary : '',
+			};
+
+			return {
+				status: 'success',
+				message: 'Get gene detail successfully',
+				data: geneInfo,
+			};
+		} catch (error) {
+			console.log('AnalysisService@getGeneDetail: ', error);
+
+			return { status: 'error' };
+		}
+	}
+
+	async getAnalysesByWorkspaceId(
+		workspace_id: number,
+		user_id: number,
+		page: number,
+		pageSize: number,
+		filterAnalysisDto: FilterAnalysisDto,
+	) {
+		const filters: any = {
+			project_id: workspace_id,
+			user_id: user_id,
+			is_deleted: 0,
+		};
+
+		if (filterAnalysisDto.status != '') {
+			const statusMap = {
+				queuing: [AnalysisStatus.QUEUING, AnalysisStatus.FASTQ_QUEUING],
+				analyzing: [
+					AnalysisStatus.ANALYZING,
+					AnalysisStatus.FASTQ_ANALYZING,
+					AnalysisStatus.VEP_ANALYZED,
+					AnalysisStatus.IMPORTING,
+				],
+				analyzed: [AnalysisStatus.ANALYZED],
+				error: [AnalysisStatus.ERROR, AnalysisStatus.FASTQ_ERROR],
+			};
+
+			const statuses = statusMap[filterAnalysisDto.status.toLowerCase()];
+			if (statuses) {
+				filters.status = In(statuses);
+			}
+		}
+		if (filterAnalysisDto.assembly != '') {
+			filters.assembly = filterAnalysisDto.assembly;
+		}
+		if (filterAnalysisDto.analysisName != '') {
+			filters.name = Like(`%${filterAnalysisDto.analysisName}%`);
+		}
+		if (filterAnalysisDto.sampleName != '') {
+			const temp = await this.samplesService.getSamplesBySampleName(
+				filterAnalysisDto.sampleName,
+			);
+			filters.sample_id = In(temp);
+		}
+
+		const results = await this.paginationProvider.paginate(
+			page,
+			pageSize,
+			this.analysisRepository,
+			filters,
+		);
+
+		const data = await Promise.all(
+			results.data.map(async (analysis) => {
+				const pipeline_name = await this.pipelinesService.getPipelineNameFromId(
+					analysis.pipeline_id,
+				);
+				const createdAt = dayjs(analysis.createdAt).format('DD/MM/YYYY');
+				const updatedAt = dayjs(analysis.updatedAt).format('DD/MM/YYYY');
+				const analyzed = analysis.analyzed
+					? dayjs(analysis.analyzed).format('DD/MM/YYYY')
+					: '';
+				return {
+					id: analysis.id,
+					name: analysis.name,
+					pipeline_name: pipeline_name,
+					createdAt: createdAt,
+					updatedAt: updatedAt,
+					analyzed: analyzed,
+					variants: analysis.variants,
+					assembly: analysis.assembly,
+					sequencing_type: analysis.sequencing_type,
+					status: Analysis.getAnalysisStatus(analysis.status),
+				};
+			}),
+		);
+
+		return {
+			...results,
+			data,
+			message: 'List all analyses successfully!',
+		};
+	}
+
+	async deleteAnalysesByWorkspaceId(workspace_id: number) {
+		return await this.analysisRepository.update(
+			{ project_id: workspace_id },
+			{ is_deleted: 1 },
+		);
+	}
+
+	async update(id: number, updateAnalysisDto: UpdateAnalysisDto) {
+		const analysis = await this.analysisRepository.findOne({ where: { id } });
+		if (!analysis) {
+			throw new BadRequestException('That analysis could not be found');
+		}
+		await this.analysisRepository.update({ id }, { ...updateAnalysisDto });
+
+		return {
+			status: 'success',
+			message: 'Updated successfully!',
+		};
+	}
+
+	async getQCVCF(id: number) {
+		const analysis = await this.analysisRepository.findOne({ where: { id } });
+		if (!analysis) {
+			throw new BadRequestException('That analysis could not be found');
+		}
+
+		const file_path =
+			'http://s3.amazonaws.com/vcf.files/ExAC.r0.2.sites.vep.vcf.gz';
+		const tbi_path = '';
+		const genome_build = analysis.assembly == 'hg19' ? 'GRCh37' : 'GRCh38';
+
+		return {
+			status: 'success',
+			message: 'Get QC URL successfully',
+			data: `${this.configService.get<string>('VCF_IOBIO_HOST')}/?species=Human&build=${genome_build}&vcf=${file_path}&tbi=${tbi_path}`,
+		};
+	}
+
+	async getIGVInfo(id: number, ip: string) {
+		const normalizedIp = ip === '::1' ? '127.0.0.1' : ip.replace('::ffff:', '');
+
+		const analysis = await this.analysisRepository.findOne({ where: { id } });
+		if (!analysis) {
+			throw new BadRequestException('That analysis could not be found');
+		}
+
+		const folderName = analysis.igv_local_path;
+
+		return {
+			status: 'success',
+			message: 'Get QC URL successfully',
+			data: {
+				bamUrl: this.getIgvLink(`${folderName}/analysis.bam`, normalizedIp),
+				bamIndexUrl: this.getIgvLink(
+					`${folderName}/analysis.bam.bai`,
+					normalizedIp,
+				),
+				fastaUrl: analysis.assembly == 'hg19' ? 'GRCh37' : 'GRCh38',
+				fastaIndexUrl: analysis.assembly == 'hg19' ? 'GRCh37' : 'GRCh38',
+				geneUrl: analysis.assembly == 'hg19' ? 'GRCh37' : 'GRCh38',
+			},
+		};
+	}
+
+	getIgvLink(uri, client_ip) {
+		if (!uri || !client_ip) {
+			console.log('AnalysisService@getIgvLink: IP address undefined');
+			return undefined;
+		}
+
+		const url = this.configService.get<string>('IGV_HOST');
+		if (url == '') {
+			console.log('AnalysisService@getIgvLink: IGV host undefined');
+			return undefined;
+		}
+
+		uri = '/' + uri;
+
+		const secret = 'itisawsomekey1599';
+
+		const today = new Date();
+		const minute_exist = today.getMinutes() + 30;
+		const expires = Math.round(
+			new Date(
+				today.getFullYear(),
+				today.getMonth(),
+				today.getDate(),
+				today.getHours(),
+				minute_exist,
+				today.getSeconds(),
+			).getTime() / 1000,
+		);
+		const input = uri + client_ip + expires + ' ' + secret;
+		const base64Value = createHash('md5').update(input).digest('base64');
+		const result =
+			url +
+			uri +
+			'?' +
+			'signatures=' +
+			base64Value.replace(/\+/g, '-').replace(/\//g, '_').replace(/\=/g, '') +
+			'&expires=' +
+			expires;
+
+		console.log(result);
+		return result;
+	}
+
+	async updateVariantsSelected(id: number, arr: VariantToReportDto[]) {
+		const analysis = await this.analysisRepository.findOne({ where: { id } });
+		if (!analysis) {
+			throw new BadRequestException('That analysis could not be found');
+		}
+		await this.analysisRepository.update(
+			{ id },
+			{ variants_to_report: JSON.stringify(arr) },
+		);
+
+		return {
+			status: 'success',
+			message: 'Updated variants selected successfully!',
+		};
+	}
+
+	async remove(id: number) {
+		const analysis = await this.analysisRepository.findOne({ where: { id } });
+		if (!analysis) {
+			throw new BadRequestException('That analysis could not be found');
+		}
+		await this.analysisRepository.update({ id }, { is_deleted: 1 });
+		return {
+			status: 'success',
+			message: 'Deleted successfully!',
+		};
+	}
+
+	async getPendingAnalysis(assembly: string) {
+		let data: any = null;
+		const analyses = await this.analysisRepository.find({
+			where: {
+				status: AnalysisStatus.QUEUING,
+				is_deleted: 0,
+				assembly: assembly,
+			},
+			order: {
+				createdAt: 'ASC',
+			},
+		});
+		if (analyses.length === 0) {
+			return data;
+		}
+
+		data = analyses[0];
+		const uploads = await this.uploadsService.findUploadsBySampleId(
+			data.sample_id,
+		);
+		data.upload = uploads[0];
+
+		const destination = `${this.configService.get<string>('ANALYSIS_FOLDER')}/${data.user_id}/${data.id}/analysis.anno`;
+		await this.analysisRepository.update(
+			{ id: analyses[0].id },
+			{ file_path: destination },
+		);
+
+		return data;
+	}
+
+	async getPendingFastqAnalysis() {
+		let data: any = null;
+		const analyses = await this.analysisRepository.find({
+			where: {
+				status: AnalysisStatus.FASTQ_QUEUING,
+				is_deleted: 0,
+			},
+			order: {
+				createdAt: 'ASC',
+			},
+		});
+		if (analyses.length === 0) {
+			return data;
+		}
+
+		data = analyses[0];
+		const uploads = await this.uploadsService.findUploadsBySampleId(
+			data.sample_id,
+		);
+		for (const e of uploads) {
+			if (e.fastq_pair_index == 1) {
+				data.fastq1 = e;
+			} else if (e.fastq_pair_index == 2) {
+				data.fastq2 = e;
+			}
+		}
+
+		// let destination = `${this.configService.get<string>('ANALYSIS_FOLDER')}/${data.user_id}/${data.id}/analysis.anno`;
+		// await this.analysisRepository.update({ id: analyses[0].id }, { file_path: destination });
+
+		return data;
+	}
+
+	async updateAnalysisStatus(analysisId: number, status: AnalysisStatus) {
+		const analysis = await this.analysisRepository.findOne({
+			where: { id: analysisId },
+		});
+		if (!analysis) {
+			throw new BadRequestException('That analysis could not be found');
+		}
+
+		if (status === AnalysisStatus.ANALYZED) {
+			analysis.analyzed = new Date();
+		}
+
+		analysis.status = status;
+		await this.analysisRepository.save(analysis);
+
+		this.analysisGateway.sendAnalysisStatusUpdate({
+			id: analysis.id,
+			status: Analysis.getAnalysisStatus(analysis.status),
+		});
+
+		return {
+			status: 'success',
+			message: 'Analysis status updated successfully',
+		};
+	}
+
+	async getAnalysisStaticsByStatus(user_id: number) {
+		const queuing = await this.analysisRepository.count({
+			where: {
+				user_id: user_id,
+				is_deleted: 0,
+				status: In([AnalysisStatus.QUEUING, AnalysisStatus.FASTQ_QUEUING]),
+			},
+		});
+		const analyzing = await this.analysisRepository.count({
+			where: {
+				user_id: user_id,
+				is_deleted: 0,
+				status: In([
+					AnalysisStatus.ANALYZING,
+					AnalysisStatus.FASTQ_ANALYZING,
+					AnalysisStatus.VEP_ANALYZED,
+					AnalysisStatus.IMPORTING,
+				]),
+			},
+		});
+		const analyzed = await this.analysisRepository.count({
+			where: {
+				user_id: user_id,
+				is_deleted: 0,
+				status: AnalysisStatus.ANALYZED,
+			},
+		});
+		const error = await this.analysisRepository.count({
+			where: {
+				user_id: user_id,
+				is_deleted: 0,
+				status: In([AnalysisStatus.ERROR, AnalysisStatus.FASTQ_ERROR]),
+			},
+		});
+
+		return {
+			queuing,
+			analyzing,
+			analyzed,
+			error,
+		};
+	}
 }

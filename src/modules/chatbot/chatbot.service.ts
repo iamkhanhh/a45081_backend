@@ -32,183 +32,183 @@ const CONTEXT_MESSAGE_LIMIT = 20;
 
 @Injectable()
 export class ChatbotService implements OnModuleInit {
-  private openai: OpenAI;
-  private mongoDb: Db;
-  private collectionName: string;
+	private openai: OpenAI;
+	private mongoDb: Db;
+	private collectionName: string;
 
-  constructor(
-    @InjectRepository(ChatConversations)
-    private conversationRepository: Repository<ChatConversations>,
-    private readonly mongodbProvider: MongodbProvider,
-    private readonly configService: ConfigService,
-  ) {}
+	constructor(
+		@InjectRepository(ChatConversations)
+		private conversationRepository: Repository<ChatConversations>,
+		private readonly mongodbProvider: MongodbProvider,
+		private readonly configService: ConfigService,
+	) {}
 
-  async onModuleInit() {
-    this.openai = new OpenAI({
-      apiKey: this.configService.get<string>('OPENAI_API_KEY'),
-    });
+	async onModuleInit() {
+		this.openai = new OpenAI({
+			apiKey: this.configService.get<string>('OPENAI_API_KEY'),
+		});
 
-    this.mongoDb = await this.mongodbProvider.mongodbConnect();
-    this.collectionName = this.configService.get<string>(
-      'MONGO_CHAT_COLLECTION',
-    );
+		this.mongoDb = await this.mongodbProvider.mongodbConnect();
+		this.collectionName = this.configService.get<string>(
+			'MONGO_CHAT_COLLECTION',
+		);
 
-    await this.mongoDb
-      .collection(this.collectionName)
-      .createIndex({ conversationId: 1, createdAt: -1 });
-  }
+		await this.mongoDb
+			.collection(this.collectionName)
+			.createIndex({ conversationId: 1, createdAt: -1 });
+	}
 
-  async createConversation(userId: number, dto: CreateConversationDto) {
-    const conversation = this.conversationRepository.create({
-      user_id: userId,
-      title: dto.title || 'New conversation',
-    });
-    await this.conversationRepository.save(conversation);
+	async createConversation(userId: number, dto: CreateConversationDto) {
+		const conversation = this.conversationRepository.create({
+			user_id: userId,
+			title: dto.title || 'New conversation',
+		});
+		await this.conversationRepository.save(conversation);
 
-    return {
-      status: 'success',
-      message: 'Conversation created successfully',
-      data: conversation,
-    };
-  }
+		return {
+			status: 'success',
+			message: 'Conversation created successfully',
+			data: conversation,
+		};
+	}
 
-  async getConversations(userId: number) {
-    const conversations = await this.conversationRepository.find({
-      where: { user_id: userId },
-      order: { updatedAt: 'DESC' },
-    });
+	async getConversations(userId: number) {
+		const conversations = await this.conversationRepository.find({
+			where: { user_id: userId },
+			order: { updatedAt: 'DESC' },
+		});
 
-    return {
-      status: 'success',
-      message: 'Conversations retrieved successfully',
-      data: conversations,
-    };
-  }
+		return {
+			status: 'success',
+			message: 'Conversations retrieved successfully',
+			data: conversations,
+		};
+	}
 
-  async getMessages(conversationId: number, userId: number) {
-    await this.validateConversationOwner(conversationId, userId);
+	async getMessages(conversationId: number, userId: number) {
+		await this.validateConversationOwner(conversationId, userId);
 
-    const messages = await this.mongoDb
-      .collection(this.collectionName)
-      .find({ conversationId })
-      .sort({ createdAt: 1 })
-      .toArray();
+		const messages = await this.mongoDb
+			.collection(this.collectionName)
+			.find({ conversationId })
+			.sort({ createdAt: 1 })
+			.toArray();
 
-    return {
-      status: 'success',
-      message: 'Messages retrieved successfully',
-      data: messages,
-    };
-  }
+		return {
+			status: 'success',
+			message: 'Messages retrieved successfully',
+			data: messages,
+		};
+	}
 
-  async queueMessage(conversationId: number, userId: number, content: string) {
-    await this.validateConversationOwner(conversationId, userId);
+	async queueMessage(conversationId: number, userId: number, content: string) {
+		await this.validateConversationOwner(conversationId, userId);
 
-    const result = await this.mongoDb
-      .collection(this.collectionName)
-      .insertOne({
-        conversationId,
-        role: 'user',
-        content,
-        createdAt: new Date(),
-      });
+		const result = await this.mongoDb
+			.collection(this.collectionName)
+			.insertOne({
+				conversationId,
+				role: 'user',
+				content,
+				createdAt: new Date(),
+			});
 
-    const messageCount = await this.mongoDb
-      .collection(this.collectionName)
-      .countDocuments({ conversationId });
+		const messageCount = await this.mongoDb
+			.collection(this.collectionName)
+			.countDocuments({ conversationId });
 
-    if (messageCount === 1) {
-      const title =
-        content.length > 50 ? content.substring(0, 50) + '...' : content;
-      await this.conversationRepository.update(conversationId, { title });
-    }
+		if (messageCount === 1) {
+			const title =
+				content.length > 50 ? content.substring(0, 50) + '...' : content;
+			await this.conversationRepository.update(conversationId, { title });
+		}
 
-    await this.conversationRepository.update(conversationId, {});
+		await this.conversationRepository.update(conversationId, {});
 
-    return {
-      status: 'success',
-      message: 'Message queued successfully',
-      data: { messageId: result.insertedId.toString() },
-    };
-  }
+		return {
+			status: 'success',
+			message: 'Message queued successfully',
+			data: { messageId: result.insertedId.toString() },
+		};
+	}
 
-  async streamMessage(
-    conversationId: number,
-    userId: number,
-    messageId: string,
-  ) {
-    await this.validateConversationOwner(conversationId, userId);
+	async streamMessage(
+		conversationId: number,
+		userId: number,
+		messageId: string,
+	) {
+		await this.validateConversationOwner(conversationId, userId);
 
-    const pendingMessage = await this.mongoDb
-      .collection(this.collectionName)
-      .findOne({ _id: new ObjectId(messageId) });
+		const pendingMessage = await this.mongoDb
+			.collection(this.collectionName)
+			.findOne({ _id: new ObjectId(messageId) });
 
-    if (!pendingMessage) {
-      throw new NotFoundException('Message not found');
-    }
+		if (!pendingMessage) {
+			throw new NotFoundException('Message not found');
+		}
 
-    const recentMessages = await this.mongoDb
-      .collection(this.collectionName)
-      .find({ conversationId })
-      .sort({ createdAt: -1 })
-      .limit(CONTEXT_MESSAGE_LIMIT)
-      .toArray();
+		const recentMessages = await this.mongoDb
+			.collection(this.collectionName)
+			.find({ conversationId })
+			.sort({ createdAt: -1 })
+			.limit(CONTEXT_MESSAGE_LIMIT)
+			.toArray();
 
-    recentMessages.reverse();
+		recentMessages.reverse();
 
-    const openaiMessages: OpenAI.ChatCompletionMessageParam[] = [
-      { role: 'system', content: SYSTEM_PROMPT },
-      ...recentMessages.map((m) => ({
-        role: m.role as 'user' | 'assistant',
-        content: m.content as string,
-      })),
-    ];
+		const openaiMessages: OpenAI.ChatCompletionMessageParam[] = [
+			{ role: 'system', content: SYSTEM_PROMPT },
+			...recentMessages.map((m) => ({
+				role: m.role as 'user' | 'assistant',
+				content: m.content as string,
+			})),
+		];
 
-    const stream = await this.openai.chat.completions.create({
-      model: this.configService.get<string>('OPENAI_MODEL') || 'gpt-4o-mini',
-      messages: openaiMessages,
-      stream: true,
-    });
+		const stream = await this.openai.chat.completions.create({
+			model: this.configService.get<string>('OPENAI_MODEL') || 'gpt-4o-mini',
+			messages: openaiMessages,
+			stream: true,
+		});
 
-    return stream;
-  }
+		return stream;
+	}
 
-  async saveAssistantMessage(conversationId: number, content: string) {
-    await this.mongoDb.collection(this.collectionName).insertOne({
-      conversationId,
-      role: 'assistant',
-      content,
-      createdAt: new Date(),
-    });
-  }
+	async saveAssistantMessage(conversationId: number, content: string) {
+		await this.mongoDb.collection(this.collectionName).insertOne({
+			conversationId,
+			role: 'assistant',
+			content,
+			createdAt: new Date(),
+		});
+	}
 
-  async deleteConversation(conversationId: number, userId: number) {
-    await this.validateConversationOwner(conversationId, userId);
+	async deleteConversation(conversationId: number, userId: number) {
+		await this.validateConversationOwner(conversationId, userId);
 
-    await this.mongoDb
-      .collection(this.collectionName)
-      .deleteMany({ conversationId });
+		await this.mongoDb
+			.collection(this.collectionName)
+			.deleteMany({ conversationId });
 
-    await this.conversationRepository.delete(conversationId);
+		await this.conversationRepository.delete(conversationId);
 
-    return {
-      status: 'success',
-      message: 'Conversation deleted successfully',
-    };
-  }
+		return {
+			status: 'success',
+			message: 'Conversation deleted successfully',
+		};
+	}
 
-  private async validateConversationOwner(
-    conversationId: number,
-    userId: number,
-  ): Promise<ChatConversations> {
-    const conversation = await this.conversationRepository.findOne({
-      where: { id: conversationId, user_id: userId },
-    });
+	private async validateConversationOwner(
+		conversationId: number,
+		userId: number,
+	): Promise<ChatConversations> {
+		const conversation = await this.conversationRepository.findOne({
+			where: { id: conversationId, user_id: userId },
+		});
 
-    if (!conversation) {
-      throw new NotFoundException('Conversation not found');
-    }
+		if (!conversation) {
+			throw new NotFoundException('Conversation not found');
+		}
 
-    return conversation;
-  }
+		return conversation;
+	}
 }

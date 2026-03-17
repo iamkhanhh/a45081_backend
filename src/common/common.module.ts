@@ -11,23 +11,23 @@ import { AnalysisGateway } from './gateways/analysis.gateway';
 
 @Global()
 @Module({
-  imports: [TypeOrmModule.forFeature([Analysis])],
-  providers: [
-    PaginationProvider,
-    HashingPasswordProvider,
-    S3Provider,
-    MongodbProvider,
-    SampleImportProvider,
-    CommonProvider,
-    AnalysisGateway,
-  ],
-  exports: [
-    PaginationProvider,
-    HashingPasswordProvider,
-    S3Provider,
-    MongodbProvider,
-    CommonProvider,
-    AnalysisGateway,
-  ],
+	imports: [TypeOrmModule.forFeature([Analysis])],
+	providers: [
+		PaginationProvider,
+		HashingPasswordProvider,
+		S3Provider,
+		MongodbProvider,
+		SampleImportProvider,
+		CommonProvider,
+		AnalysisGateway,
+	],
+	exports: [
+		PaginationProvider,
+		HashingPasswordProvider,
+		S3Provider,
+		MongodbProvider,
+		CommonProvider,
+		AnalysisGateway,
+	],
 })
 export class CommonModule {}

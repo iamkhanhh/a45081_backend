@@ -4,8 +4,8 @@ import { VariantCallingController } from './variant-calling.controller';
 import { AnalysisModule } from '../analysis/analysis.module';
 
 @Module({
-  imports: [AnalysisModule],
-  controllers: [VariantCallingController],
-  providers: [VariantCallingService],
+	imports: [AnalysisModule],
+	controllers: [VariantCallingController],
+	providers: [VariantCallingService],
 })
 export class VariantCallingModule {}
