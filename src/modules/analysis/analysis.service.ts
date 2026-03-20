@@ -391,28 +391,42 @@ export class AnalysisService {
 		};
 	}
 
-	async getIGVInfo(id: number, ip: string) {
-		const normalizedIp = ip === '::1' ? '127.0.0.1' : ip.replace('::ffff:', '');
-
+	async getIGVInfo(id: number) {
 		const analysis = await this.analysisRepository.findOne({ where: { id } });
 		if (!analysis) {
 			throw new BadRequestException('That analysis could not be found');
 		}
-
-		const folderName = analysis.igv_local_path;
+		// const folderName = analysis.igv_local_path;
 
 		return {
 			status: 'success',
 			message: 'Get QC URL successfully',
 			data: {
-				bamUrl: this.getIgvLink(`${folderName}/analysis.bam`, normalizedIp),
-				bamIndexUrl: this.getIgvLink(
-					`${folderName}/analysis.bam.bai`,
-					normalizedIp,
-				),
-				fastaUrl: analysis.assembly == 'hg19' ? 'GRCh37' : 'GRCh38',
-				fastaIndexUrl: analysis.assembly == 'hg19' ? 'GRCh37' : 'GRCh38',
-				geneUrl: analysis.assembly == 'hg19' ? 'GRCh37' : 'GRCh38',
+				analysis: analysis,
+				// bamUrl: await this.s3Provider.generateDownloadUrl(`${folderName}/analysis.bam`),
+				// bamIndexUrl: await this.s3Provider.generateDownloadUrl(`${folderName}/analysis.bam.bai`),
+				bamUrl: `https://genetics-s3-prod.s3.ap-southeast-1.amazonaws.com/public/1325004575.bam`,
+				bamIndexUrl: `https://genetics-s3-prod.s3.ap-southeast-1.amazonaws.com/public/1325004575.bam.bai`,
+				fastaUrl:
+					analysis.assembly == 'hg19'
+						? await this.s3Provider.generateDownloadUrl(
+								`${this.configService.get<string>('FASTA_FOLDER')}/hg19.fa`,
+							)
+						: await this.s3Provider.generateDownloadUrl(
+								`${this.configService.get<string>('FASTA_FOLDER')}/GRCh38.fa`,
+							),
+				fastaIndexUrl:
+					analysis.assembly == 'hg19'
+						? await this.s3Provider.generateDownloadUrl(
+								`${this.configService.get<string>('FASTA_FOLDER')}/hg19.fa.fai`,
+							)
+						: await this.s3Provider.generateDownloadUrl(
+								`${this.configService.get<string>('FASTA_FOLDER')}/GRCh38.fa.fai`,
+							),
+				geneUrl:
+					analysis.assembly == 'hg19'
+						? 'https://genetics-s3-prod.s3.ap-southeast-1.amazonaws.com/public/ncbiRefSeq_hg19.txt.gz'
+						: 'https://genetics-s3-prod.s3.ap-southeast-1.amazonaws.com/public/ncbiRefSeq_hg38.txt.gz',
 			},
 		};
 	}
@@ -456,7 +470,6 @@ export class AnalysisService {
 			'&expires=' +
 			expires;
 
-		console.log(result);
 		return result;
 	}
 

@@ -10,7 +10,6 @@ import {
 	ParseIntPipe,
 	DefaultValuePipe,
 	Put,
-	Ip,
 } from '@nestjs/common';
 import {
 	ApiTags,
@@ -78,8 +77,8 @@ export class AnalysisController {
 	@ApiParam({ name: 'id', example: 1, description: 'Analysis ID' })
 	@ApiResponse({ status: 200, description: 'IGV info retrieved successfully' })
 	@ApiResponse({ status: 404, description: 'Analysis not found' })
-	getIGVInfo(@Param('id', ParseIntPipe) id: number, @Ip() ip: string) {
-		return this.analysisService.getIGVInfo(id, ip);
+	getIGVInfo(@Param('id', ParseIntPipe) id: number) {
+		return this.analysisService.getIGVInfo(id);
 	}
 
 	@Post('get-gene-detail')
