@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
@@ -27,6 +27,28 @@ IMPORTANT RULES:
 3. Answer in the same language the user uses.
 4. Provide accurate, educational responses suitable for both beginners and professionals.
 5. When explaining concepts, use examples relevant to this genomic analysis platform when possible.`;
+
+const SYSTEM_PROMPT_VARIANT_SUMMARY = `You are an expert clinical genomics assistant.
+
+Task: Summarize a genetic variant using the preferred transcript.
+
+Strict requirements:
+- Use ONLY the preferred_transcript for HGVS.c and HGVS.p.
+- Do NOT mix transcripts.
+- Write no more than 100 words. Prefer 80–90 words.
+- One single paragraph only.
+- Include: gene, HGVS.c, HGVS.p, variant type, ACMG classification (+criteria), ClinVar classification.
+- Mention disease association conservatively.
+- If ClinVar is conflicting, state it clearly.
+- Mention population frequency briefly if relevant.
+- Output in English only.
+- Do NOT add information not present in input.
+- If the summary exceeds 100 words, shorten it until it fits.
+
+Example output:
+"CHEK2 NM_007194.4:c.1100delC (p.Thr367fs) is a frameshift variant caused by a single-nucleotide deletion, predicted to disrupt the reading frame and result in an abnormal or truncated protein product. This variant has been classified as pathogenic based on ACMG criteria (PVS1, PS3, PP5). It is a well-known variant in CHEK2, a cancer predisposition gene associated with hereditary cancer susceptibility, particularly breast cancer–related risk. Although ClinVar reports conflicting classifications of pathogenicity, most submissions support a pathogenic interpretation."
+
+Return JSON only.`;
 
 const CONTEXT_MESSAGE_LIMIT = 20;
 
@@ -211,4 +233,85 @@ export class ChatbotService implements OnModuleInit {
 
 		return conversation;
 	}
+
+	async getVariantDescription(
+		preferredTranscript: string,
+		variantData: Record<string, any>,
+	) {
+		const compactVariantData = this.buildCompactVariantData(
+			preferredTranscript,
+			variantData,
+		);
+
+		const responseVariant = await this.openai.chat.completions.create({
+			model: this.configService.get<string>('OPENAI_MODEL') || 'gpt-4o-mini',
+			messages: [
+				{ role: 'system', content: SYSTEM_PROMPT_VARIANT_SUMMARY },
+				{
+				role: 'user',
+				content: JSON.stringify({
+					preferred_transcript: preferredTranscript,
+					variant_data: compactVariantData,
+				}),
+				},
+			],
+		});
+
+		const content = responseVariant.choices[0]?.message?.content;
+		
+		if (!content) {
+			throw new BadRequestException('Empty response from OpenAI');
+		}
+
+		let parsedContent;
+		try {
+			parsedContent = JSON.parse(content);
+		} catch (error) {
+			throw new BadRequestException('Invalid JSON response from OpenAI');
+		}
+
+		return parsedContent?.summary || "No summary available.";
+	}
+
+	private buildCompactVariantData(
+		preferredTranscript: string,
+		variantData: Record<string, any>,
+	) {
+		const consequences = Array.isArray(variantData?.variants?.[0]?.consequences)
+		? variantData.variants[0].consequences
+		: [];
+
+		const matched =
+		consequences.find(
+			(c: any) =>
+			c?.transcript === preferredTranscript ||
+			c?.feature === preferredTranscript ||
+			c?.mane_select === preferredTranscript,
+		) || null;
+
+		const v = variantData?.variants?.[0];
+		if (!v) {
+		throw new BadRequestException('Invalid variant_data');
+		}
+
+		return {
+			gene_symbol: v.gene_symbol,
+			dbsnp: v.dbsnp,
+			effect: v.effect,
+			acmg_classification: v.acmg_classification,
+			acmg_criteria: v.acmg_criteria,
+			clinvar_classification: v.clinvar_classification,
+			phenotype_combined: v.phenotype_combined,
+			gnomad_exomes_af: v.gnomad_exomes_af,
+			gnomad_genomes_af: v.gnomad_genomes_af,
+			preferred_transcript_consequence: matched
+				? {
+					transcript: matched.transcript ?? matched.feature ?? preferredTranscript,
+					hgvs_c: matched.hgvs_c ?? null,
+					hgvs_p: matched.hgvs_p ?? null,
+					consequences: matched.consequences ?? [],
+				}
+				: null,
+			};
+		}
 }

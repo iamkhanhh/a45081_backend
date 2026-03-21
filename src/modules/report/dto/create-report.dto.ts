@@ -8,6 +8,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { VariantReportedDto } from './variant-reported';
+import { ReferencesReportedDto } from './references-reported.dto';
 
 export class CreateReportDto {
 	@ApiProperty({
@@ -34,4 +35,13 @@ export class CreateReportDto {
 	@ValidateNested({ each: true })
 	@Type(() => VariantReportedDto)
 	variants: VariantReportedDto[];
+
+	@ApiProperty({
+		type: [ReferencesReportedDto],
+		description: 'List of references to include in the report',
+	})
+	@IsArray()
+	@ValidateNested({ each: true })
+	@Type(() => ReferencesReportedDto)
+	references: ReferencesReportedDto[];
 }

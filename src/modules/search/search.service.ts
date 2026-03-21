@@ -1,13 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { Samples, Workspaces, Analysis } from '@/entities';
 import { GlobalSearchDto } from './dto/global-search.dto';
 import { PipelinesService } from '../pipelines/pipelines.service';
 import * as dayjs from 'dayjs';
+import { HttpProvider } from '@/common/providers/http.provider';
 
 @Injectable()
 export class SearchService {
+	private readonly logger = new Logger(SearchService.name);
 	constructor(
 		@InjectRepository(Samples) private samplesRepository: Repository<Samples>,
 		@InjectRepository(Workspaces)
@@ -15,6 +17,7 @@ export class SearchService {
 		@InjectRepository(Analysis)
 		private analysisRepository: Repository<Analysis>,
 		private readonly pipelinesService: PipelinesService,
+		private readonly httpProvider: HttpProvider,
 	) {}
 
 	async globalSearch(
@@ -151,5 +154,39 @@ export class SearchService {
 			console.error('Error searching analysis:', error);
 			return [];
 		}
+	}
+	
+	async searchReferences(pmid: string) {
+		const response = await this.httpProvider.searchReferences(pmid);
+		let pubmedList = [];
+
+		if(response.result.uids.length == 0){
+			return {
+				status: 'error',
+				message: 'No references found for the given PMID',
+				data: pubmedList,
+			};
+		} else {
+			const ids = response.result.uids
+			for(let i in ids){
+				var authors = [];
+				for(let m in response.result[ids[i]].authors){
+					authors.push(response.result[ids[i]].authors[m].name);
+				}
+				pubmedList.push({
+					id : response.result[ids[i]].uid,
+					date : response.result[ids[i]].pubdate,
+					source: response.result[ids[i]].source,
+					title: response.result[ids[i]].title,
+					authors: authors,
+				})
+			}
+		}
+
+		return {
+			status: 'success',
+			message: 'References found successfully',
+			data: pubmedList,
+		};
 	}
 }

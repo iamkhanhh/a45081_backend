@@ -1,5 +1,5 @@
-import { Controller, Post, Body, Request } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { Controller, Post, Body, Request, Query, Get } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery } from '@nestjs/swagger';
 import { SearchService } from './search.service';
 import { GlobalSearchDto } from './dto/global-search.dto';
 
@@ -77,5 +77,16 @@ export class SearchController {
 	@ApiResponse({ status: 400, description: 'Bad request' })
 	async globalSearch(@Request() req, @Body() globalSearchDto: GlobalSearchDto) {
 		return this.searchService.globalSearch(req.user.id, globalSearchDto);
+	}
+
+	@Get('references')
+	@ApiOperation({ summary: 'Search references for reports' })
+	@ApiQuery({ name: 'pmid', required: true, type: String })
+	@ApiResponse({
+		status: 200,
+		description: 'References found successfully',
+	})
+	searchReferences(@Query('pmid') pmid: string) {
+		return this.searchService.searchReferences(pmid);
 	}
 }

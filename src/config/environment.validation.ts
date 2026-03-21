@@ -32,6 +32,8 @@ export default Joi.object({
 	AWS_REGION: Joi.string().required(),
 	OPENAI_API_KEY: Joi.string().required(),
 	OPENAI_MODEL: Joi.string().required(),
+	GENEBE_USERNAME: Joi.string().required(),
+	GENEBE_API_KEY: Joi.string().required(),
 	MOUNT_FOLDER: Joi.string().required(),
 	EXPORT_FOLDER: Joi.string().required(),
 	ANALYSIS_FOLDER: Joi.string().required(),
