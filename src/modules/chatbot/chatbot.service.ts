@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+import {
+	BadRequestException,
+	Injectable,
+	NotFoundException,
+	OnModuleInit,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
@@ -248,17 +253,17 @@ export class ChatbotService implements OnModuleInit {
 			messages: [
 				{ role: 'system', content: SYSTEM_PROMPT_VARIANT_SUMMARY },
 				{
-				role: 'user',
-				content: JSON.stringify({
-					preferred_transcript: preferredTranscript,
-					variant_data: compactVariantData,
-				}),
+					role: 'user',
+					content: JSON.stringify({
+						preferred_transcript: preferredTranscript,
+						variant_data: compactVariantData,
+					}),
 				},
 			],
 		});
 
 		const content = responseVariant.choices[0]?.message?.content;
-		
+
 		if (!content) {
 			throw new BadRequestException('Empty response from OpenAI');
 		}
@@ -270,7 +275,7 @@ export class ChatbotService implements OnModuleInit {
 			throw new BadRequestException('Invalid JSON response from OpenAI');
 		}
 
-		return parsedContent?.summary || "No summary available.";
+		return parsedContent?.summary || 'No summary available.';
 	}
 
 	private buildCompactVariantData(
@@ -278,20 +283,20 @@ export class ChatbotService implements OnModuleInit {
 		variantData: Record<string, any>,
 	) {
 		const consequences = Array.isArray(variantData?.variants?.[0]?.consequences)
-		? variantData.variants[0].consequences
-		: [];
+			? variantData.variants[0].consequences
+			: [];
 
 		const matched =
-		consequences.find(
-			(c: any) =>
-			c?.transcript === preferredTranscript ||
-			c?.feature === preferredTranscript ||
-			c?.mane_select === preferredTranscript,
-		) || null;
+			consequences.find(
+				(c: any) =>
+					c?.transcript === preferredTranscript ||
+					c?.feature === preferredTranscript ||
+					c?.mane_select === preferredTranscript,
+			) || null;
 
 		const v = variantData?.variants?.[0];
 		if (!v) {
-		throw new BadRequestException('Invalid variant_data');
+			throw new BadRequestException('Invalid variant_data');
 		}
 
 		return {
@@ -306,12 +311,13 @@ export class ChatbotService implements OnModuleInit {
 			gnomad_genomes_af: v.gnomad_genomes_af,
 			preferred_transcript_consequence: matched
 				? {
-					transcript: matched.transcript ?? matched.feature ?? preferredTranscript,
-					hgvs_c: matched.hgvs_c ?? null,
-					hgvs_p: matched.hgvs_p ?? null,
-					consequences: matched.consequences ?? [],
-				}
+						transcript:
+							matched.transcript ?? matched.feature ?? preferredTranscript,
+						hgvs_c: matched.hgvs_c ?? null,
+						hgvs_p: matched.hgvs_p ?? null,
+						consequences: matched.consequences ?? [],
+					}
 				: null,
-			};
-		}
+		};
+	}
 }

@@ -48,9 +48,14 @@ export class ReportService {
 		);
 		const analysis = analysisResult.data;
 
-		let detailsGeneAnhVariant = await this.generateSummary(createReportDto.variants, analysis.assembly);
-		let detailsReferences = this.generateReferences(createReportDto.references);
-		
+		const detailsGeneAnhVariant = await this.generateSummary(
+			createReportDto.variants,
+			analysis.assembly,
+		);
+		const detailsReferences = this.generateReferences(
+			createReportDto.references,
+		);
+
 		const patientResult = await this.patientsInformationService.findOne(
 			createReportDto.analysisId,
 		);
@@ -232,7 +237,7 @@ export class ReportService {
 	}
 
 	async generateSummary(variants: VariantReportedDto[], assembly: string) {
-		let detailsGeneAnhVariant = [];
+		const detailsGeneAnhVariant = [];
 		const variantData = await Promise.all(
 			variants.map(async (v) => {
 				const [chrom, pos, ref, alt] = v.id.split('_');
@@ -256,9 +261,12 @@ export class ReportService {
 			}),
 		);
 
-		for (let geneBeRes of variantData) {
-			let variantSummary = await this.chatbotService.getVariantDescription(geneBeRes.transcript, geneBeRes.response);
-			let geneInfo = await this.genesRepository.findOne({
+		for (const geneBeRes of variantData) {
+			const variantSummary = await this.chatbotService.getVariantDescription(
+				geneBeRes.transcript,
+				geneBeRes.response,
+			);
+			const geneInfo = await this.genesRepository.findOne({
 				where: {
 					name: geneBeRes.gene,
 				},
@@ -274,14 +282,14 @@ export class ReportService {
 	}
 
 	generateReferences(refs: ReferencesReportedDto[]) {
-		let detailsReferences = [];
+		const detailsReferences = [];
 
 		for (const ref of refs) {
 			detailsReferences.push({
 				text: `${ref.authors.join(', ')} \n${ref.title} ${ref.source}, ${ref.date}, PMID: ${ref.id}. \n`,
 			});
 		}
-		
+
 		return detailsReferences;
 	}
 }

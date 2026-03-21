@@ -1,5 +1,11 @@
 import { Controller, Post, Body, Request, Query, Get } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery } from '@nestjs/swagger';
+import {
+	ApiTags,
+	ApiOperation,
+	ApiResponse,
+	ApiBody,
+	ApiQuery,
+} from '@nestjs/swagger';
 import { SearchService } from './search.service';
 import { GlobalSearchDto } from './dto/global-search.dto';
 

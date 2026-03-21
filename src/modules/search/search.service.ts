@@ -155,31 +155,31 @@ export class SearchService {
 			return [];
 		}
 	}
-	
+
 	async searchReferences(pmid: string) {
 		const response = await this.httpProvider.searchReferences(pmid);
-		let pubmedList = [];
+		const pubmedList = [];
 
-		if(response.result.uids.length == 0){
+		if (response.result.uids.length == 0) {
 			return {
 				status: 'error',
 				message: 'No references found for the given PMID',
 				data: pubmedList,
 			};
 		} else {
-			const ids = response.result.uids
-			for(let i in ids){
-				var authors = [];
-				for(let m in response.result[ids[i]].authors){
+			const ids = response.result.uids;
+			for (const i in ids) {
+				const authors = [];
+				for (const m in response.result[ids[i]].authors) {
 					authors.push(response.result[ids[i]].authors[m].name);
 				}
 				pubmedList.push({
-					id : response.result[ids[i]].uid,
-					date : response.result[ids[i]].pubdate,
+					id: response.result[ids[i]].uid,
+					date: response.result[ids[i]].pubdate,
 					source: response.result[ids[i]].source,
 					title: response.result[ids[i]].title,
 					authors: authors,
-				})
+				});
 			}
 		}
 
