@@ -8,10 +8,18 @@ import { Analysis } from '@/entities';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CommonProvider } from './providers/common.provider';
 import { AnalysisGateway } from './gateways/analysis.gateway';
+import { HttpProvider } from './providers/http.provider';
+import { HttpModule } from '@nestjs/axios';
 
 @Global()
 @Module({
-	imports: [TypeOrmModule.forFeature([Analysis])],
+	imports: [
+		TypeOrmModule.forFeature([Analysis]),
+		HttpModule.register({
+			timeout: 5000,
+			maxRedirects: 5,
+		}),
+	],
 	providers: [
 		PaginationProvider,
 		HashingPasswordProvider,
@@ -20,6 +28,7 @@ import { AnalysisGateway } from './gateways/analysis.gateway';
 		SampleImportProvider,
 		CommonProvider,
 		AnalysisGateway,
+		HttpProvider,
 	],
 	exports: [
 		PaginationProvider,
@@ -28,6 +37,7 @@ import { AnalysisGateway } from './gateways/analysis.gateway';
 		MongodbProvider,
 		CommonProvider,
 		AnalysisGateway,
+		HttpProvider,
 	],
 })
 export class CommonModule {}

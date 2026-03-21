@@ -1,9 +1,8 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateReportDto } from './dto/create-report.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Report } from '@/entities';
+import { Genes, Report } from '@/entities';
 import { Repository } from 'typeorm';
-
 import * as fs from 'fs';
 import * as path from 'path';
 import PizZip from 'pizzip';
@@ -13,50 +12,49 @@ import { S3Provider } from '@/common/providers/s3.provider';
 import * as dayjs from 'dayjs';
 import { AnalysisService } from '../analysis/analysis.service';
 import { PatientsInformationService } from '../patient-information/patient-information.service';
-
-interface ReportVariantData {
-	gene: string;
-	change: string;
-	zygosity: string;
-	inheritance: string;
-	classification: string;
-}
-
-interface ReportTemplateData {
-	report_name: string;
-	patient_no: string;
-	patient_name: string;
-	dob: string;
-	gender: string;
-	ethnicity: string;
-	physician_name: string;
-	specimen: string;
-	received_date: string;
-	prepared_by: string;
-	report_date: string;
-	test_requested: string;
-	clinical_information: string;
-	summary: { text: string }[];
-	variants: ReportVariantData[];
-	details: { text: string }[];
-}
+import { ReportTemplateData, ReportVariantData } from './interfaces';
+import { OpenAI } from 'openai';
+import { HttpProvider } from '@/common/providers/http.provider';
+import { ChatbotService } from '../chatbot/chatbot.service';
+import { VariantReportedDto } from './dto/variant-reported';
+import { ReferencesReportedDto } from './dto/references-reported.dto';
 
 @Injectable()
 export class ReportService {
+	private openai: OpenAI;
+
 	constructor(
 		@InjectRepository(Report)
-		private reportRepository: Repository<Report>,
-		private configService: ConfigService,
-		private s3Provider: S3Provider,
-		private analysisService: AnalysisService,
-		private patientsInformationService: PatientsInformationService,
+		private readonly reportRepository: Repository<Report>,
+		@InjectRepository(Genes)
+		private readonly genesRepository: Repository<Genes>,
+		private readonly configService: ConfigService,
+		private readonly s3Provider: S3Provider,
+		private readonly analysisService: AnalysisService,
+		private readonly patientsInformationService: PatientsInformationService,
+		private readonly httpProvider: HttpProvider,
+		private readonly chatbotService: ChatbotService,
 	) {}
+
+	async onModuleInit() {
+		this.openai = new OpenAI({
+			apiKey: this.configService.get<string>('OPENAI_API_KEY'),
+		});
+	}
 
 	async create(createReportDto: CreateReportDto, user_id: number) {
 		const analysisResult = await this.analysisService.findOne(
 			createReportDto.analysisId,
 		);
 		const analysis = analysisResult.data;
+
+		const detailsGeneAnhVariant = await this.generateSummary(
+			createReportDto.variants,
+			analysis.assembly,
+		);
+		const detailsReferences = this.generateReferences(
+			createReportDto.references,
+		);
 
 		const patientResult = await this.patientsInformationService.findOne(
 			createReportDto.analysisId,
@@ -67,8 +65,8 @@ export class ReportService {
 			(v) => ({
 				gene: v.gene,
 				change: v.cdna,
-				zygosity: 'N\\A',
-				inheritance: 'N\\A',
+				zygosity: 'N/A',
+				inheritance: 'N/A',
 				classification: v.classification,
 			}),
 		);
@@ -80,7 +78,7 @@ export class ReportService {
 			dob: dayjs(patient.dob).format('DD/MM/YYYY'),
 			gender: patient.gender,
 			ethnicity: patient.ethnicity,
-			physician_name: 'N\\A',
+			physician_name: 'N/A',
 			specimen: patient.sample_type,
 			received_date: dayjs(analysis.createdAt).format('DD/MM/YYYY'),
 			prepared_by: 'TLU GENETICS',
@@ -91,12 +89,8 @@ export class ReportService {
 				text: `${v.classification.toUpperCase()} VARIANT IDENTIFIED`,
 			})),
 			variants: formattedVariants,
-			details: [
-				`SYNE4: This gene is a member of the nesprin family of genes, that encode KASH (Klarsicht, Anc-1, Syne Homology) domain-containing proteins. In addition to the KASH domain, this protein also contains a coiled-coil and leucine zipper region, a spectrin repeat, and a kinesin-1 binding region. This protein localizes to the outer nuclear membrane, and is part of the linker of nucleoskeleton and cytoskeleton (LINC) complex in the nuclear envelope. LINC complexes are formed by SUN (Sad1, UNC-84)-KASH pairs, and are thought to mechanically couple nuclear components to the cytoskeleton. Mutations in this gene have been associated with progressive high-frequency hearing loss. The absence of this protein in mice also caused hearing loss, and changes in hair cell morphology in the ears. Alternative splicing results in multiple transcript variants encoding different isoforms. [provided by RefSeq, Aug 2015] The identified synonymous variant, c.243T>C (p.Ser81=), lies in exon 2 of the SYNE4 gene. This variant is predicted to be non- damaging by in-silico prediction tool(s) (CADD, REVEL, SpliceAI). This variant has been reported in the dbSNP database (rs149158221) and in the genome Aggregation Database (gnomAD) as a rare variant with the highest allele frequency (AF) of 0.00202215 while 1 homozygosity (for this variant) has been reported. In the ClinVar database, the clinical significance of this variant has been reported as 'Benign/Likely benign' with consensus in the context of SYNE4-related disorder (RCV003908030.2). In summary, based on ACMG guidelines, this variant was classified as 'Benign or Likely Benign'.`,
-				`NGF: This gene is a member of the NGF-beta family and encodes a secreted protein which homodimerizes and is incorporated into a larger complex. This protein has nerve growth stimulating activity and the complex is involved in the regulation of growth and the differentiation of sympathetic and certain sensory neurons. Mutations in this gene have been associated with hereditary sensory and autonomic neuropathy, type 5 (HSAN5), and dysregulation of this gene's expression is associated with allergic rhinitis. [provided by RefSeq, Jul 2008]`,
-			].map((v) => ({
-				text: `${v}`,
-			})),
+			details: detailsGeneAnhVariant,
+			references: detailsReferences,
 		};
 
 		const { fileName } = await this.generateReportFile(
@@ -240,5 +234,62 @@ export class ReportService {
 			status: 'success',
 			message: 'Deleted successfully!',
 		};
+	}
+
+	async generateSummary(variants: VariantReportedDto[], assembly: string) {
+		const detailsGeneAnhVariant = [];
+		const variantData = await Promise.all(
+			variants.map(async (v) => {
+				const [chrom, pos, ref, alt] = v.id.split('_');
+				const response = await this.httpProvider.getGenebeData(
+					chrom,
+					parseInt(pos),
+					ref,
+					alt,
+					v.transcript,
+					assembly,
+				);
+				return {
+					chrom,
+					pos,
+					ref,
+					alt,
+					gene: v.gene,
+					transcript: v.transcript,
+					response,
+				};
+			}),
+		);
+
+		for (const geneBeRes of variantData) {
+			const variantSummary = await this.chatbotService.getVariantDescription(
+				geneBeRes.transcript,
+				geneBeRes.response,
+			);
+			const geneInfo = await this.genesRepository.findOne({
+				where: {
+					name: geneBeRes.gene,
+				},
+			});
+			detailsGeneAnhVariant.push({
+				text: `${geneBeRes.gene}: ${geneInfo ? geneInfo.summary : 'No description available'}.`,
+			});
+			detailsGeneAnhVariant.push({
+				text: `${variantSummary}`,
+			});
+		}
+		return detailsGeneAnhVariant;
+	}
+
+	generateReferences(refs: ReferencesReportedDto[]) {
+		const detailsReferences = [];
+
+		for (const ref of refs) {
+			detailsReferences.push({
+				text: `${ref.authors.join(', ')} \n${ref.title} ${ref.source}, ${ref.date}, PMID: ${ref.id}. \n`,
+			});
+		}
+
+		return detailsReferences;
 	}
 }

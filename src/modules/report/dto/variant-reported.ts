@@ -3,6 +3,13 @@ import { IsString } from 'class-validator';
 
 export class VariantReportedDto {
 	@ApiProperty({
+		example: '1_8395441_T_C',
+		description: 'Variant IDentifier',
+	})
+	@IsString()
+	id: string;
+
+	@ApiProperty({
 		example: 'ABCA4',
 		description: 'Gene symbol',
 	})
