@@ -1,4 +1,5 @@
 import { Controller, Post, UseGuards, Request, Get, Body, Param, Res, ParseIntPipe } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './passport/local-auth.guard';
@@ -15,6 +16,7 @@ export class AuthController {
   ) {}
 
   @Public()
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('login')
   @UseGuards(LocalAuthGuard)
   @ApiOperation({ summary: 'Login with email and password' })
@@ -38,6 +40,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('register')
   @ApiOperation({ summary: 'Register a new account' })
   @ApiResponse({ status: 201, description: 'Account registered successfully' })
@@ -70,6 +73,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('forgot-password')
   @ApiOperation({ summary: 'Request password reset' })
   @ApiBody({ schema: { type: 'object', properties: { email: { type: 'string', example: 'user@example.com' } }, required: ['email'] } })

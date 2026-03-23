@@ -13,6 +13,7 @@ import { S3Provider } from '@/common/providers/s3.provider';
 import * as dayjs from 'dayjs'
 import { AnalysisService } from '../analysis/analysis.service';
 import { PatientsInformationService } from '../patient-information/patient-information.service';
+import { PaginationProvider } from '@/common/providers/pagination.provider';
 
 interface ReportVariantData {
     gene: string;
@@ -50,6 +51,7 @@ export class ReportService {
         private s3Provider: S3Provider,
         private analysisService: AnalysisService,
         private patientsInformationService: PatientsInformationService,
+        private PaginationProvider: PaginationProvider
     ) { }
 
     async create(createReportDto: CreateReportDto, user_id: number) {
@@ -171,20 +173,12 @@ export class ReportService {
         };
     }
 
-    async findAll(user_id: number, analysis_id: number) {
-        const reports = await this.reportRepository.find({
-            where: {
-                user_created: user_id,
-                analysis_id: analysis_id,
-                is_deleted: 0
-            }
+    async findAll(user_id: number, analysis_id: number, page: number, pageSize: number) {
+        return this.PaginationProvider.paginate(page, pageSize, this.reportRepository, {
+            user_created: user_id,
+            analysis_id: analysis_id,
+            is_deleted: 0
         });
-
-        return {
-            status: 'success',
-            message: 'Get reports successfully',
-            data: reports
-        };
     }
 
     async findOne(user_id: number, report_id: number) {

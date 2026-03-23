@@ -182,8 +182,8 @@ export class UsersService {
     newUser.codeExpired = dayjs().add(30, 'minutes').toDate();
     const savedUser = await this.usersRepository.save(newUser);
 
-    this.mailerService
-      .sendMail({
+    try {
+      await this.mailerService.sendMail({
         to: savedUser.email,
         subject: 'Activate your account',
         template: "register",
@@ -191,7 +191,10 @@ export class UsersService {
           name: savedUser.first_name && savedUser.last_name ? `${savedUser.first_name} ${savedUser.last_name}` : savedUser.email,
           activationCode: codeId
         }
-      })
+      });
+    } catch (error) {
+      throw new BadRequestException('Failed to send activation email. Please try again later.');
+    }
 
     return {
       status: 'success',
@@ -247,8 +250,8 @@ export class UsersService {
     const hashPassword = await this.hashingPasswordProvider.hashPasswordHelper(codeId);
     await this.usersRepository.update({ id: user.id }, { password: hashPassword });
 
-    this.mailerService
-      .sendMail({
+    try {
+      await this.mailerService.sendMail({
         to: user.email,
         subject: 'Temp password',
         template: "forgot-password",
@@ -256,7 +259,10 @@ export class UsersService {
           name: user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.email,
           tempPassword: codeId
         }
-      })
+      });
+    } catch (error) {
+      throw new BadRequestException('Failed to send reset password email. Please try again later.');
+    }
 
     return {
       status: 'success',

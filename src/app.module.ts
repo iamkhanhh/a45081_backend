@@ -5,6 +5,7 @@ import { UsersModule } from '@/modules/users/users.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from '@/auth/auth.module';
 import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -32,6 +33,10 @@ const ENV = process.env.NODE_ENV || 'development';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([{
+      ttl: 60000,
+      limit: 60,
+    }]),
     UsersModule,
     ConfigModule.forRoot({
       isGlobal: true,
@@ -59,7 +64,7 @@ const ENV = process.env.NODE_ENV || 'development';
         defaults: {
           from: '"No Reply" <no-reply@Genetics>',
         },
-        preview: true,
+        preview: process.env.NODE_ENV === 'development',
         template: {
           dir: process.cwd() + '/src/mail/templates/',
           adapter: new HandlebarsAdapter(),
@@ -100,6 +105,10 @@ const ENV = process.env.NODE_ENV || 'development';
     {
       provide: APP_GUARD,
       useClass: AuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
   ],
 })

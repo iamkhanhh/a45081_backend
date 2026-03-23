@@ -30,14 +30,14 @@ async function bootstrap() {
     // origin: 'http://localhost:4200', 
     // origin: '*', 
     // methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', 
-    credentials: true, 
+    credentials: true,
   }));
 
   const configDocument = new DocumentBuilder()
     .setTitle('Genetics API')
     .setDescription('The Genetics API based on NestJS')
     .setTermsOfService('http://localhost:3000/terms-of-service')
-    .addServer('http://localhost:3000')
+    .addServer(configService.get<string>('API_URL') || 'http://localhost:3000')
     .setVersion('1.0')
     .build();
   const documentFactory = () => SwaggerModule.createDocument(app, configDocument);

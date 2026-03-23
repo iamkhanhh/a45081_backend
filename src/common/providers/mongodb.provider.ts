@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Db, MongoClient } from 'mongodb';
 
 @Injectable()
-export class MongodbProvider {
+export class MongodbProvider implements OnModuleDestroy {
     private client: MongoClient;
 
     constructor(
@@ -23,5 +23,9 @@ export class MongodbProvider {
             await this.client.close();
             this.client = null;
         }
+    }
+
+    async onModuleDestroy(): Promise<void> {
+        await this.mongodbDisconnect();
     }
 }
