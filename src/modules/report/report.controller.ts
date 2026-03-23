@@ -34,6 +34,8 @@ export class ReportController {
 	@Get()
 	@ApiOperation({ summary: 'Get all reports of current user' })
 	@ApiQuery({ name: 'analysis_id', required: true, type: Number })
+	@ApiQuery({ name: 'page', required: false, type: Number })
+	@ApiQuery({ name: 'pageSize', required: false, type: Number })
 	@ApiResponse({
 		status: 200,
 		description: 'List of reports returned successfully',
