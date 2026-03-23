@@ -22,7 +22,7 @@ export class UsersService {
 		private readonly mailerService: MailerService,
 		private readonly hashingPasswordProvider: HashingPasswordProvider,
 		private readonly paginationProvider: PaginationProvider,
-	) {}
+	) { }
 
 	async create(createUserDto: CreateUserDto, user_id: number) {
 		const isEmailExist = await this.isEMailExist(createUserDto.email);
@@ -212,18 +212,22 @@ export class UsersService {
 		newUser.codeExpired = dayjs().add(30, 'minutes').toDate();
 		const savedUser = await this.usersRepository.save(newUser);
 
-		this.mailerService.sendMail({
-			to: savedUser.email,
-			subject: 'Activate your account',
-			template: 'register',
-			context: {
-				name:
-					savedUser.first_name && savedUser.last_name
-						? `${savedUser.first_name} ${savedUser.last_name}`
-						: savedUser.email,
-				activationCode: codeId,
-			},
-		});
+		try {
+			await this.mailerService.sendMail({
+				to: savedUser.email,
+				subject: 'Activate your account',
+				template: 'register',
+				context: {
+					name:
+						savedUser.first_name && savedUser.last_name
+							? `${savedUser.first_name} ${savedUser.last_name}`
+							: savedUser.email,
+					activationCode: codeId,
+				},
+			});
+		} catch (error) {
+			throw new BadRequestException('Failed to send activation email. Please try again later.');
+		}
 
 		return {
 			status: 'success',
@@ -290,19 +294,23 @@ export class UsersService {
 			{ password: hashPassword },
 		);
 
-		this.mailerService.sendMail({
-			to: user.email,
-			subject: 'Temp password',
-			template: 'forgot-password',
-			context: {
-				name:
-					user.first_name && user.last_name
-						? `${user.first_name} ${user.last_name}`
-						: user.email,
-				tempPassword: codeId,
-			},
-		});
+		try {
+			await this.mailerService.sendMail({
+				to: user.email,
+				subject: 'Temp password',
+				template: 'forgot-password',
+				context: {
+					name:
+						user.first_name && user.last_name
+							? `${user.first_name} ${user.last_name}`
+							: user.email,
+					tempPassword: codeId,
+				},
+			});
 
+		} catch (error) {
+			throw new BadRequestException('Failed to send reset password email. Please try again later.');
+		}
 		return {
 			status: 'success',
 			message: 'Your temp password will be send to your email!',

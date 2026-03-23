@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from '@/app.controller';
 import { AppService } from '@/app.service';
 import { UsersModule } from '@/modules/users/users.module';
@@ -43,6 +44,7 @@ const ENV = process.env.NODE_ENV || 'development';
 
 @Module({
 	imports: [
+		ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
 		UsersModule,
 		ConfigModule.forRoot({
 			isGlobal: true,
@@ -70,7 +72,7 @@ const ENV = process.env.NODE_ENV || 'development';
 				defaults: {
 					from: '"No Reply" <no-reply@Genetics>',
 				},
-				preview: true,
+				preview: ENV !== 'production',
 				template: {
 					dir: process.cwd() + '/src/mail/templates/',
 					adapter: new HandlebarsAdapter(),

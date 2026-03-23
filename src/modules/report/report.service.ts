@@ -16,6 +16,7 @@ import { ReportTemplateData, ReportVariantData } from './interfaces';
 import { OpenAI } from 'openai';
 import { HttpProvider } from '@/common/providers/http.provider';
 import { ChatbotService } from '../chatbot/chatbot.service';
+import { PaginationProvider } from '@/common/providers/pagination.provider';
 import { VariantReportedDto } from './dto/variant-reported';
 import { ReferencesReportedDto } from './dto/references-reported.dto';
 
@@ -34,7 +35,8 @@ export class ReportService {
 		private readonly patientsInformationService: PatientsInformationService,
 		private readonly httpProvider: HttpProvider,
 		private readonly chatbotService: ChatbotService,
-	) {}
+		private readonly PaginationProvider: PaginationProvider,
+	) { }
 
 	async onModuleInit() {
 		this.openai = new OpenAI({
@@ -172,20 +174,12 @@ export class ReportService {
 		};
 	}
 
-	async findAll(user_id: number, analysis_id: number) {
-		const reports = await this.reportRepository.find({
-			where: {
-				user_created: user_id,
-				analysis_id: analysis_id,
-				is_deleted: 0,
-			},
+	async findAll(user_id: number, analysis_id: number, page: number, pageSize: number) {
+		return this.PaginationProvider.paginate(page, pageSize, this.reportRepository, {
+			user_created: user_id,
+			analysis_id: analysis_id,
+			is_deleted: 0
 		});
-
-		return {
-			status: 'success',
-			message: 'Get reports successfully',
-			data: reports,
-		};
 	}
 
 	async findOne(user_id: number, report_id: number) {

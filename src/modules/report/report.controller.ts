@@ -34,12 +34,19 @@ export class ReportController {
 	@Get()
 	@ApiOperation({ summary: 'Get all reports of current user' })
 	@ApiQuery({ name: 'analysis_id', required: true, type: Number })
+	@ApiQuery({ name: 'page', required: false, type: Number })
+	@ApiQuery({ name: 'pageSize', required: false, type: Number })
 	@ApiResponse({
 		status: 200,
 		description: 'List of reports returned successfully',
 	})
-	findAll(@Request() req, @Query('analysis_id') analysis_id: string) {
-		return this.reportService.findAll(req.user.id, +analysis_id);
+	findAll(
+		@Request() req,
+		@Query('analysis_id') analysis_id: string,
+		@Query('page') page: number = 1,
+		@Query('pageSize') pageSize: number = 10,
+	) {
+		return this.reportService.findAll(req.user.id, +analysis_id, +page, +pageSize);
 	}
 
 	@Get(':id')
