@@ -175,14 +175,18 @@ export class ReportService {
 	}
 
 	async findAll(user_id: number, analysis_id: number) {
-		return (
-			await this.reportRepository,
-			{
+		const data = await this.reportRepository.find({
+			where: {
 				user_created: user_id,
 				analysis_id: analysis_id,
 				is_deleted: 0,
-			}
-		);
+			},
+		});
+		return {
+			status: 'success',
+			message: 'Get report successfully',
+			data: data,
+		};
 	}
 
 	async findOne(user_id: number, report_id: number) {
