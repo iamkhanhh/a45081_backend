@@ -36,7 +36,7 @@ export class ReportService {
 		private readonly httpProvider: HttpProvider,
 		private readonly chatbotService: ChatbotService,
 		private readonly PaginationProvider: PaginationProvider,
-	) { }
+	) {}
 
 	async onModuleInit() {
 		this.openai = new OpenAI({
@@ -180,13 +180,13 @@ export class ReportService {
 				user_created: user_id,
 				analysis_id: analysis_id,
 				is_deleted: 0,
-			}
-		})
+			},
+		});
 		return {
 			status: 'success',
 			message: 'Get report successfully',
-			data: data
-		}
+			data: data,
+		};
 	}
 
 	async findOne(user_id: number, report_id: number) {
