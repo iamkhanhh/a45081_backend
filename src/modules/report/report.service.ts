@@ -36,7 +36,7 @@ export class ReportService {
 		private readonly httpProvider: HttpProvider,
 		private readonly chatbotService: ChatbotService,
 		private readonly PaginationProvider: PaginationProvider,
-	) { }
+	) {}
 
 	async onModuleInit() {
 		this.openai = new OpenAI({
@@ -174,12 +174,15 @@ export class ReportService {
 		};
 	}
 
-	async findAll(user_id: number, analysis_id: number, page: number, pageSize: number) {
-		return this.PaginationProvider.paginate(page, pageSize, this.reportRepository, {
-			user_created: user_id,
-			analysis_id: analysis_id,
-			is_deleted: 0
-		});
+	async findAll(user_id: number, analysis_id: number) {
+		return (
+			await this.reportRepository,
+			{
+				user_created: user_id,
+				analysis_id: analysis_id,
+				is_deleted: 0,
+			}
+		);
 	}
 
 	async findOne(user_id: number, report_id: number) {

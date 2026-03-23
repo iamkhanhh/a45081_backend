@@ -40,13 +40,8 @@ export class ReportController {
 		status: 200,
 		description: 'List of reports returned successfully',
 	})
-	findAll(
-		@Request() req,
-		@Query('analysis_id') analysis_id: string,
-		@Query('page') page: number = 1,
-		@Query('pageSize') pageSize: number = 10,
-	) {
-		return this.reportService.findAll(req.user.id, +analysis_id, +page, +pageSize);
+	findAll(@Request() req, @Query('analysis_id') analysis_id: string) {
+		return this.reportService.findAll(req.user.id, +analysis_id);
 	}
 
 	@Get(':id')

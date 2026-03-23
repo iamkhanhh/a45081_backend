@@ -22,7 +22,7 @@ export class UsersService {
 		private readonly mailerService: MailerService,
 		private readonly hashingPasswordProvider: HashingPasswordProvider,
 		private readonly paginationProvider: PaginationProvider,
-	) { }
+	) {}
 
 	async create(createUserDto: CreateUserDto, user_id: number) {
 		const isEmailExist = await this.isEMailExist(createUserDto.email);
@@ -226,7 +226,9 @@ export class UsersService {
 				},
 			});
 		} catch (error) {
-			throw new BadRequestException('Failed to send activation email. Please try again later.');
+			throw new BadRequestException(
+				'Failed to send activation email. Please try again later.',
+			);
 		}
 
 		return {
@@ -307,9 +309,10 @@ export class UsersService {
 					tempPassword: codeId,
 				},
 			});
-
 		} catch (error) {
-			throw new BadRequestException('Failed to send reset password email. Please try again later.');
+			throw new BadRequestException(
+				'Failed to send reset password email. Please try again later.',
+			);
 		}
 		return {
 			status: 'success',
