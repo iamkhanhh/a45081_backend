@@ -9,6 +9,8 @@ export class AppController {
 	@Public()
 	@Get('health')
 	health() {
-		return { status: 'ok' };
+		return {
+			status: 'ok',
+		};
 	}
 }
