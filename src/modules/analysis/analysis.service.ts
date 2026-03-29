@@ -501,13 +501,13 @@ export class AnalysisService {
 		};
 	}
 
-	async getPendingAnalysis(assembly: string) {
+	async getPendingAnalysis() {
 		let data: any = null;
 		const analyses = await this.analysisRepository.find({
 			where: {
 				status: AnalysisStatus.QUEUING,
 				is_deleted: 0,
-				assembly: assembly,
+				// assembly: assembly,
 			},
 			order: {
 				createdAt: 'ASC',

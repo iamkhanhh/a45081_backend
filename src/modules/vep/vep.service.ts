@@ -7,7 +7,7 @@ export class VepService {
 	constructor(private readonly analysisService: AnalysisService) {}
 
 	async getPendingAnalysis() {
-		const analysis = await this.analysisService.getPendingAnalysis('hg19');
+		const analysis = await this.analysisService.getPendingAnalysis();
 
 		return {
 			status: 'success',

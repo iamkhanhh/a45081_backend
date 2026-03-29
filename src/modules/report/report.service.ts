@@ -1,8 +1,8 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateReportDto } from './dto/create-report.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Genes, Report } from '@/entities';
-import { Repository } from 'typeorm';
+import { Genes, PGx, Report } from '@/entities';
+import { In, Repository } from 'typeorm';
 import * as fs from 'fs';
 import * as path from 'path';
 import PizZip from 'pizzip';
@@ -12,37 +12,38 @@ import { S3Provider } from '@/common/providers/s3.provider';
 import * as dayjs from 'dayjs';
 import { AnalysisService } from '../analysis/analysis.service';
 import { PatientsInformationService } from '../patient-information/patient-information.service';
-import { ReportTemplateData, ReportVariantData } from './interfaces';
-import { OpenAI } from 'openai';
+import {
+	IPgxData,
+	IPgxReportData,
+	IReportData,
+	ReportTemplateData,
+	ReportVariantData,
+} from './interfaces';
 import { HttpProvider } from '@/common/providers/http.provider';
 import { ChatbotService } from '../chatbot/chatbot.service';
 import { PaginationProvider } from '@/common/providers/pagination.provider';
 import { VariantReportedDto } from './dto/variant-reported';
 import { ReferencesReportedDto } from './dto/references-reported.dto';
+import { VariantsService } from '../variants/variants.service';
 
 @Injectable()
 export class ReportService {
-	private openai: OpenAI;
-
 	constructor(
 		@InjectRepository(Report)
 		private readonly reportRepository: Repository<Report>,
 		@InjectRepository(Genes)
 		private readonly genesRepository: Repository<Genes>,
+		@InjectRepository(PGx)
+		private readonly pgxRepository: Repository<PGx>,
 		private readonly configService: ConfigService,
 		private readonly s3Provider: S3Provider,
 		private readonly analysisService: AnalysisService,
 		private readonly patientsInformationService: PatientsInformationService,
 		private readonly httpProvider: HttpProvider,
 		private readonly chatbotService: ChatbotService,
+		private readonly variantsService: VariantsService,
 		private readonly PaginationProvider: PaginationProvider,
 	) {}
-
-	async onModuleInit() {
-		this.openai = new OpenAI({
-			apiKey: this.configService.get<string>('OPENAI_API_KEY'),
-		});
-	}
 
 	async create(createReportDto: CreateReportDto, user_id: number) {
 		const analysisResult = await this.analysisService.findOne(
@@ -292,5 +293,144 @@ export class ReportService {
 		}
 
 		return detailsReferences;
+	}
+
+	async getReportData(analysisId: number): Promise<IReportData> {
+		const pgxData: IPgxData[] = await this.getPgxData(analysisId);
+		const categories = [];
+		const data: IPgxReportData[] = [];
+
+		for (const i in pgxData) {
+			const item = pgxData[i];
+			const annotationText = item.annotation_text.split('.,"').join('.","');
+
+			const annotationArray = annotationText.split(',"');
+			const annotationList = {};
+
+			for (const k in annotationArray) {
+				const anoItem = annotationArray[k].split('"').join('');
+				annotationList[anoItem.split(':')[0]] = anoItem;
+			}
+
+			if (categories.indexOf(item.drug_response_category) == -1) {
+				categories.push(item.drug_response_category);
+			}
+
+			const drugs = item.related_chemicals.split(',');
+
+			for (const j in drugs) {
+				data.push({
+					chrom: item.chrom,
+					pos: item.pos,
+					ref: item.ref,
+					alt: item.alt,
+					af: item.af,
+					rsid: item.rsid,
+					drug: drugs[j].split('"').join('').trim(),
+					evidence: item.evidence,
+					drug_response_category: item.drug_response_category,
+					gene: item.gene,
+					variant: item.rsid,
+					genotype: '',
+					annotation_text: annotationList,
+				});
+			}
+		}
+
+		let resultList: IPgxReportData[] = [];
+
+		for (const i in data) {
+			const item = data[i];
+			if (item.af >= 0.92) {
+				resultList.push({
+					chrom: item.chrom,
+					pos: item.pos,
+					ref: item.ref,
+					alt: item.alt,
+					af: item.af,
+					drug: item.drug.split('(')[0],
+					rsid: item.rsid,
+					evidence: item.evidence,
+					drug_response_category: item.drug_response_category,
+					gene: item.gene,
+					variant: item.variant,
+					genotype: item.genotype,
+					annotation_text: item.annotation_text[item.alt + item.alt]
+						? item.annotation_text[item.alt + item.alt]
+						: item.annotation_text[item.alt + '/' + item.alt],
+				});
+			} else {
+				let annotationText = item.annotation_text[item.alt + item.ref]
+					? item.annotation_text[item.alt + item.ref]
+					: item.annotation_text[item.ref + item.alt];
+				annotationText = annotationText
+					? annotationText
+					: item.annotation_text[item.ref + '/' + item.alt];
+				resultList.push({
+					chrom: item.chrom,
+					pos: item.pos,
+					ref: item.ref,
+					alt: item.alt,
+					af: item.af,
+					drug: item.drug.split('(')[0],
+					rsid: item.rsid,
+					evidence: item.evidence,
+					drug_response_category: item.drug_response_category,
+					gene: item.gene,
+					variant: item.variant,
+					genotype: item.genotype,
+					annotation_text: annotationText,
+				});
+			}
+		}
+
+		resultList = resultList
+			.filter((item) => item.annotation_text)
+			.sort((a, b) => (a.drug > b.drug ? 1 : a.drug < b.drug ? -1 : 0));
+
+		return {
+			pgxData: resultList.slice(0, 25),
+			categories: categories,
+		};
+	}
+
+	async getPgxData(analysisId: number) {
+		const variants = await this.variantsService.getPgxVariants(analysisId);
+
+		const rsIds = variants.map((variant) => variant.rsid);
+
+		const pgxRecords = await this.pgxRepository.find({
+			where: {
+				rsid: In(rsIds),
+			},
+		});
+
+		const result: IPgxData[] = [];
+
+		for (const i in pgxRecords) {
+			for (const j in variants) {
+				if (
+					pgxRecords[i].rsid == variants[j].rsid &&
+					(pgxRecords[i].gene.indexOf(variants[j].gene) == 0 ||
+						pgxRecords[i].gene == '.')
+				) {
+					result.push({
+						chrom: variants[j].chrom,
+						pos: variants[j].inputPos,
+						ref: variants[j].REF,
+						alt: variants[j].ALT,
+						rsid: variants[j].rsid,
+						af: variants[j].alleleFrequency,
+						gene: variants[j].gene,
+						evidence: pgxRecords[i].evidence,
+						related_chemicals: pgxRecords[i].related_chemicals,
+						drug_response_category: pgxRecords[i].drug_response_category,
+						annotation_text: pgxRecords[i].annotation_text,
+					});
+				}
+			}
+		}
+
+		return result;
 	}
 }

@@ -281,6 +281,44 @@ export class VariantsService {
 		return matchAnd;
 	}
 
+	async getPgxVariants(analysisId: number) {
+		const db = await this.mongodbProvider.mongodbConnect();
+		const collection = db.collection(
+			`${this.configService.get<string>('MONGO_DB_PREFIX')}_${analysisId}`,
+		);
+		if (!collection) {
+			return [];
+		}
+
+		const pipeline = [];
+		const matchAnd = [];
+
+		matchAnd.push({ PGx: 1 });
+		const match = { $match: { $and: matchAnd } };
+		pipeline.push(match);
+
+		pipeline.push({
+			$project: {
+				_id: '$_id',
+				gene: '$gene',
+				transcript_id: '$transcript',
+				inputPos: '$inputPos',
+				chrom: '$chrom',
+				rsid: '$rsId',
+				REF: '$REF',
+				ALT: '$ALT',
+				alleleFrequency: `$alleleFrequency`,
+				classification: '$CLINSIG_FINAL',
+			},
+		});
+
+		const [variants] = await Promise.all([
+			collection.aggregate(pipeline, { allowDiskUse: true }).toArray(),
+		]);
+
+		return variants;
+	}
+
 	private projectFields() {
 		return {
 			id: '$_id',
