@@ -12,3 +12,6 @@ export * from './uploads.entity';
 export * from './user-subscription.entity';
 export * from './users.entity';
 export * from './workspaces.entity';
+export * from './genes.entity';
+export * from './report.entity';
+export * from './pgx.entity';

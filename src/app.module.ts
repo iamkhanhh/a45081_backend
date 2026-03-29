@@ -24,6 +24,7 @@ import {
 	Users,
 	Workspaces,
 	Genes,
+	PGx,
 } from './entities';
 import { AuthGuard } from './auth/passport/auth.guard';
 import { PipelinesModule } from './modules/pipelines/pipelines.module';
@@ -111,6 +112,10 @@ const ENV = process.env.NODE_ENV || 'development';
 					UserSubscription,
 					Users,
 					Workspaces,
+					Genes,
+					ChatConversations,
+					Report,
+					PGx,
 				],
 				synchronize: false,
 			}),
