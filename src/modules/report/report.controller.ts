@@ -7,6 +7,7 @@ import {
 	Delete,
 	Request,
 	Query,
+	UseGuards,
 } from '@nestjs/common';
 import {
 	ApiTags,
@@ -17,7 +18,11 @@ import {
 } from '@nestjs/swagger';
 import { ReportService } from './report.service';
 import { CreateReportDto } from './dto/create-report.dto';
+import { UsageLimitGuard } from '@/auth/passport/usage-limit.guard';
+import { RequiresPlanFeature } from '@/decorators/requires-plan-feature.decorator';
 
+@UseGuards(UsageLimitGuard)
+@RequiresPlanFeature('report')
 @ApiTags('Report')
 @Controller('report')
 export class ReportController {

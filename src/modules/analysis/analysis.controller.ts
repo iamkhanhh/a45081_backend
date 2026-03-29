@@ -10,6 +10,7 @@ import {
 	ParseIntPipe,
 	DefaultValuePipe,
 	Put,
+	UseGuards,
 } from '@nestjs/common';
 import {
 	ApiTags,
@@ -23,12 +24,17 @@ import { CreateAnalysisDto } from './dto/create-analysis.dto';
 import { UpdateAnalysisDto } from './dto/update-analysis.dto';
 import { FilterAnalysisDto } from './dto/filter-analysis.dto';
 import { GetGeneDetailDto } from './dto/get-gene-detail.dto';
+import { UsageLimitGuard } from '@/auth/passport/usage-limit.guard';
+import { TrackDailyUsage } from '@/decorators/track-daily-usage.decorator';
+import { RequiresPlanFeature } from '@/decorators/requires-plan-feature.decorator';
 
 @ApiTags('Analysis')
 @Controller('analysis')
 export class AnalysisController {
 	constructor(private readonly analysisService: AnalysisService) {}
 
+	@UseGuards(UsageLimitGuard)
+	@TrackDailyUsage('analysis')
 	@Post()
 	@ApiOperation({ summary: 'Create a new analysis' })
 	@ApiResponse({ status: 201, description: 'Analysis created successfully' })
@@ -60,6 +66,8 @@ export class AnalysisController {
 		);
 	}
 
+	@UseGuards(UsageLimitGuard)
+	@RequiresPlanFeature('qc')
 	@Get('get-qc-vcf/:id')
 	@ApiOperation({ summary: 'Get QC VCF data for an analysis' })
 	@ApiParam({ name: 'id', example: 1, description: 'Analysis ID' })

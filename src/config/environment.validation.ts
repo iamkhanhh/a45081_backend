@@ -38,4 +38,9 @@ export default Joi.object({
 	ANALYSIS_FOLDER: Joi.string().required(),
 	UPLOAD_FOLDER: Joi.string().required(),
 	FASTA_FOLDER: Joi.string().required(),
+	PAYOS_CLIENT_ID: Joi.string().required(),
+	PAYOS_API_KEY: Joi.string().required(),
+	PAYOS_CHECKSUM_KEY: Joi.string().required(),
+	REDIS_HOST: Joi.string().required(),
+	REDIS_PORT: Joi.number().port().default(6379).required(),
 });

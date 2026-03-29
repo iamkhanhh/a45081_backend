@@ -21,7 +21,6 @@ import {
 } from './interfaces';
 import { HttpProvider } from '@/common/providers/http.provider';
 import { ChatbotService } from '../chatbot/chatbot.service';
-import { PaginationProvider } from '@/common/providers/pagination.provider';
 import { VariantReportedDto } from './dto/variant-reported';
 import { ReferencesReportedDto } from './dto/references-reported.dto';
 import { VariantsService } from '../variants/variants.service';
@@ -42,7 +41,6 @@ export class ReportService {
 		private readonly httpProvider: HttpProvider,
 		private readonly chatbotService: ChatbotService,
 		private readonly variantsService: VariantsService,
-		private readonly PaginationProvider: PaginationProvider,
 	) {}
 
 	async create(createReportDto: CreateReportDto, user_id: number) {
@@ -182,6 +180,7 @@ export class ReportService {
 				analysis_id: analysis_id,
 				is_deleted: 0,
 			},
+			order: { createdAt: 'ASC' },
 		});
 		return {
 			status: 'success',
