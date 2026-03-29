@@ -1,6 +1,9 @@
 # dùng node LTS
 FROM node:20
 
+# install mongoimport (mongodb-database-tools)
+COPY --from=mongo:4.2.14 /usr/bin/mongoimport /usr/local/bin/mongoimport
+
 # tạo thư mục app trong container
 WORKDIR /app
 

@@ -7,7 +7,6 @@ import { MongodbProvider } from './mongodb.provider';
 import { AnalysisStatus } from '@/enums';
 import { CommonProvider } from './common.provider';
 import { ConfigService } from '@nestjs/config';
-import * as path from 'path';
 import * as dayjs from 'dayjs';
 import { AnalysisGateway } from '../gateways/analysis.gateway';
 
@@ -67,31 +66,19 @@ export class SampleImportProvider {
 				analysis.id,
 			);
 
-			const file_path = `${this.configService.get<string>('MOUNT_FOLDER')}/${analysis.file_path}`;
-			const file_path_import = `${this.configService.get<string>('MONGO_MOUNT_FOLDER')}/genetics/${analysis.file_path}`;
-			const dir_path_import = path.dirname(file_path_import);
-
-			await this.commonProvider.runCommand(
-				`mkdir -p "${dir_path_import}" && cp ${file_path} ${file_path_import}`,
-			);
-
 			const options = [
-				`--host ${this.configService.get<string>('MONGO_DB_HOST')} --port 27017`,
+				`--host ${this.configService.get<string>('MONGO_DB_HOST')} --port ${this.configService.get<string>('MONGO_DB_PORT')}`,
 				`--collection ${collectionName}`,
 				`--db ${this.configService.get<string>('MONGO_DB_DATABASE')}`,
 				`--type tsv`,
 				`--headerline`,
-				`--file /data/db/genetics/${analysis.file_path}`,
+				`--file ${this.configService.get<string>('MOUNT_FOLDER')}/${analysis.file_path}`,
 				`--drop`,
 			];
 
 			const command = `${this.configService.get<string>('MONGO_IMPORT_CMD')} ${options.join(' ')}`;
 
 			await this.commonProvider.runCommand(command);
-
-			await this.commonProvider.runCommand(
-				`rm -rf ${this.configService.get<string>('MONGO_MOUNT_FOLDER')}/genetics`,
-			);
 
 			return true;
 		} catch (error) {
