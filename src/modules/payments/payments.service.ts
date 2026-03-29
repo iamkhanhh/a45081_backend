@@ -41,12 +41,11 @@ export class PaymentsService {
 		const paymentData = {
 			orderCode: orderCode,
 			amount: plan.price,
-			description: `${plan.name} 1 thang`,
+			description: `${plan.name} 1 month`,
 			returnUrl: `${this.configService.get(`ALLOWED_ORIGINS`)}/payments/result`,
 			cancelUrl: `${this.configService.get(`ALLOWED_ORIGINS`)}/payments/cancel`,
 		};
 		const paymentLink = await this.payos.paymentRequests.create(paymentData);
-		console.log('Payment link created:', paymentLink);
 		const order = this.orderRepo.create({
 			orderCode,
 			user: { id: userId } as Users,

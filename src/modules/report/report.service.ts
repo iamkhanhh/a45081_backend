@@ -41,7 +41,6 @@ export class ReportService {
 		private readonly httpProvider: HttpProvider,
 		private readonly chatbotService: ChatbotService,
 		private readonly variantsService: VariantsService,
-		private readonly PaginationProvider: PaginationProvider,
 	) {}
 
 	async create(createReportDto: CreateReportDto, user_id: number) {
