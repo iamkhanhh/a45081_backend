@@ -14,5 +14,6 @@ import { AnalysisModule } from '../analysis/analysis.module';
 	],
 	controllers: [VariantsController],
 	providers: [VariantsService],
+	exports: [VariantsService],
 })
 export class VariantsModule {}
