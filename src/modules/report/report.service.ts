@@ -16,7 +16,6 @@ import { ReportTemplateData, ReportVariantData } from './interfaces';
 import { OpenAI } from 'openai';
 import { HttpProvider } from '@/common/providers/http.provider';
 import { ChatbotService } from '../chatbot/chatbot.service';
-import { PaginationProvider } from '@/common/providers/pagination.provider';
 import { VariantReportedDto } from './dto/variant-reported';
 import { ReferencesReportedDto } from './dto/references-reported.dto';
 
@@ -35,7 +34,6 @@ export class ReportService {
 		private readonly patientsInformationService: PatientsInformationService,
 		private readonly httpProvider: HttpProvider,
 		private readonly chatbotService: ChatbotService,
-		private readonly PaginationProvider: PaginationProvider,
 	) {}
 
 	async onModuleInit() {
@@ -181,6 +179,7 @@ export class ReportService {
 				analysis_id: analysis_id,
 				is_deleted: 0,
 			},
+			order: { createdAt: 'ASC' },
 		});
 		return {
 			status: 'success',

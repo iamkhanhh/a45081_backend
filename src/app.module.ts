@@ -11,15 +11,19 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handleba
 import { TypeOrmModule } from '@nestjs/typeorm';
 import {
 	Analysis,
+	ChatConversations,
 	GeneClinicalSynopsis,
 	PatientsInformation,
+	PaymentOrder,
 	Pipelines,
+	Report,
 	Samples,
+	SubscriptionPlan,
 	Uploads,
+	UserSubscription,
 	Users,
 	Workspaces,
 	Genes,
-	Report,
 } from './entities';
 import { AuthGuard } from './auth/passport/auth.guard';
 import { PipelinesModule } from './modules/pipelines/pipelines.module';
@@ -35,10 +39,10 @@ import environmentValidation from './config/environment.validation';
 import { ScheduleModule } from '@nestjs/schedule';
 import { VepModule } from './modules/vep/vep.module';
 import { VariantCallingModule } from './modules/variant-calling/variant-calling.module';
-import { ChatConversations } from './entities/chat_conversations.entity';
 import { ChatbotModule } from './modules/chatbot/chatbot.module';
 import { SearchModule } from './modules/search/search.module';
 import { ReportModule } from './modules/report/report.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 
 const ENV = process.env.NODE_ENV || 'development';
 
@@ -94,16 +98,19 @@ const ENV = process.env.NODE_ENV || 'development';
 				database: configService.get('DB_DATABASE'),
 				entities: [
 					Analysis,
+					ChatConversations,
 					GeneClinicalSynopsis,
+					Genes,
 					PatientsInformation,
+					PaymentOrder,
 					Pipelines,
+					Report,
 					Samples,
+					SubscriptionPlan,
 					Uploads,
+					UserSubscription,
 					Users,
 					Workspaces,
-					Genes,
-					ChatConversations,
-					Report,
 				],
 				synchronize: false,
 			}),
@@ -118,6 +125,7 @@ const ENV = process.env.NODE_ENV || 'development';
 		ChatbotModule,
 		SearchModule,
 		ReportModule,
+		PaymentsModule,
 	],
 	controllers: [AppController],
 	providers: [

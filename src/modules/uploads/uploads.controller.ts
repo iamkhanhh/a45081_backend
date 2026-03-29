@@ -8,17 +8,22 @@ import {
 	Delete,
 	ParseIntPipe,
 	Request,
+	UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { UploadsService } from './uploads.service';
 import { UpdateUploadDto } from './dto/update-upload.dto';
 import { CreateUploadForSample } from './dto/create-upload-for-sample.dto';
+import { TrackDailyUsage } from '@/decorators/track-daily-usage.decorator';
+import { UsageLimitGuard } from '@/auth/passport/usage-limit.guard';
 
 @ApiTags('Uploads')
 @Controller('uploads')
 export class UploadsController {
 	constructor(private readonly uploadsService: UploadsService) {}
 
+	@UseGuards(UsageLimitGuard)
+	@TrackDailyUsage('upload')
 	@Post('fastq')
 	@ApiOperation({ summary: 'Create a new FASTQ upload record' })
 	@ApiResponse({
